@@ -289,14 +289,14 @@ func (dc *DataClient) maybeAutoStart() {
 		return
 	}
 	if npcap == "adminonly" && !elevated {
-		dc.setMessage("warn", "O Data Client está fechado. Como o seu Npcap só permite captura para administradores, clique em \"Abrir Data Client\" e aceite a permissão do Windows.")
+		dc.setMessage("warn", L("O Data Client está fechado. Como o seu Npcap só permite captura para administradores, clique em \"Abrir Data Client\" e aceite a permissão do Windows.", "The Data Client is closed. Since your Npcap only allows capture for administrators, click \"Open Data Client\" and accept the Windows permission."))
 		return
 	}
 	if err := dc.startManaged(); err != nil {
-		dc.setMessage("err", "Não consegui abrir o Data Client: "+err.Error())
+		dc.setMessage("err", L("Não consegui abrir o Data Client: ", "Could not open the Data Client: ")+err.Error())
 		return
 	}
-	dc.setMessage("ok", "Abri o Data Client junto com o app. Os preços do mercado vão chegar aqui enquanto o app estiver aberto.")
+	dc.setMessage("ok", L("Abri o Data Client junto com o app. Os preços do mercado vão chegar aqui enquanto o app estiver aberto.", "Opened the Data Client with the app. Market prices will arrive here while the app is open."))
 }
 
 func (dc *DataClient) clientDir() string {
@@ -313,7 +313,7 @@ func (dc *DataClient) startManaged() error {
 		return nil
 	}
 	if exe == "" {
-		return errors.New("o Albion Data Client não foi encontrado neste PC")
+		return errors.New(L("o Albion Data Client não foi encontrado neste PC", "the Albion Data Client was not found on this PC"))
 	}
 	dir := dc.clientDir()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -378,7 +378,7 @@ func (dc *DataClient) Shutdown() {
 // Action executa um botão da aba Captura.
 func (dc *DataClient) Action(name string) {
 	if !dc.actionMu.TryLock() {
-		dc.setMessage("warn", "Espere a ação anterior terminar.")
+		dc.setMessage("warn", L("Espere a ação anterior terminar.", "Wait for the previous action to finish."))
 		return
 	}
 	go func() {
@@ -408,10 +408,10 @@ func (dc *DataClient) runAction(name string) {
 	switch name {
 	case "link":
 		if st.Exe == "" {
-			dc.setMessage("err", "Não encontrei o Albion Data Client instalado. Instale pelo site do Albion Online Data Project e tente de novo.")
+			dc.setMessage("err", L("Não encontrei o Albion Data Client instalado. Instale pelo site do Albion Online Data Project e tente de novo.", "Could not find the Albion Data Client installed. Install it from the Albion Online Data Project site and try again."))
 			return
 		}
-		dc.setBusy("Esperando a permissão do Windows…")
+		dc.setBusy(L("Esperando a permissão do Windows…", "Waiting for Windows permission…"))
 		args := "-minimize -p " + dc.ingestURL
 		res, err := dc.runTaskScript(st.Exe, args, true)
 		if err != nil {
@@ -423,13 +423,13 @@ func (dc *DataClient) runAction(name string) {
 		dc.prefs.LinkedArgs = args
 		dc.savePrefsLocked()
 		dc.mu.Unlock()
-		dc.setMessage("ok", "Pronto. O Data Client foi reiniciado e agora manda os preços para o app. Navegue no mercado do jogo para testar.")
+		dc.setMessage("ok", L("Pronto. O Data Client foi reiniciado e agora manda os preços para o app. Navegue no mercado do jogo para testar.", "Done. The Data Client was restarted and now sends prices to the app. Browse the in-game market to test."))
 	case "unlink":
 		if st.Exe == "" {
-			dc.setMessage("err", "Não encontrei o Albion Data Client instalado.")
+			dc.setMessage("err", L("Não encontrei o Albion Data Client instalado.", "Could not find the Albion Data Client installed."))
 			return
 		}
-		dc.setBusy("Esperando a permissão do Windows…")
+		dc.setBusy(L("Esperando a permissão do Windows…", "Waiting for Windows permission…"))
 		res, err := dc.runTaskScript(st.Exe, "-minimize", true)
 		if err != nil {
 			dc.reportScriptError(err, res)
@@ -440,56 +440,56 @@ func (dc *DataClient) runAction(name string) {
 		dc.prefs.LinkedArgs = ""
 		dc.savePrefsLocked()
 		dc.mu.Unlock()
-		dc.setMessage("ok", "O início automático do Data Client voltou ao padrão do instalador, sem mandar preços para o app.")
+		dc.setMessage("ok", L("O início automático do Data Client voltou ao padrão do instalador, sem mandar preços para o app.", "The Data Client autostart is back to the installer default, without sending prices to the app."))
 	case "start":
 		if st.Running {
-			dc.setMessage("ok", "O Data Client já está rodando.")
+			dc.setMessage("ok", L("O Data Client já está rodando.", "The Data Client is already running."))
 			return
 		}
 		if st.Exe == "" {
-			dc.setMessage("err", "Não encontrei o Albion Data Client instalado.")
+			dc.setMessage("err", L("Não encontrei o Albion Data Client instalado.", "Could not find the Albion Data Client installed."))
 			return
 		}
 		if st.Npcap == "adminonly" && !st.Elevated {
-			dc.setBusy("Esperando a permissão do Windows…")
+			dc.setBusy(L("Esperando a permissão do Windows…", "Waiting for Windows permission…"))
 			if err := startClientElevated(st.Exe, dc.clientDir(), []string{"-p", dc.ingestURL}); err != nil {
 				if errors.Is(err, ErrCancelled) {
-					dc.setMessage("warn", "Você recusou a permissão do Windows. O Data Client não foi aberto.")
+					dc.setMessage("warn", L("Você recusou a permissão do Windows. O Data Client não foi aberto.", "You declined the Windows permission. The Data Client was not opened."))
 				} else {
-					dc.setMessage("err", "Não consegui abrir o Data Client como administrador: "+err.Error())
+					dc.setMessage("err", L("Não consegui abrir o Data Client como administrador: ", "Could not open the Data Client as administrator: ")+err.Error())
 				}
 				return
 			}
-			dc.setMessage("ok", "Data Client aberto como administrador, mandando preços para o app.")
+			dc.setMessage("ok", L("Data Client aberto como administrador, mandando preços para o app.", "Data Client opened as administrator, sending prices to the app."))
 			return
 		}
 		if err := dc.startManaged(); err != nil {
-			dc.setMessage("err", "Não consegui abrir o Data Client: "+err.Error())
+			dc.setMessage("err", L("Não consegui abrir o Data Client: ", "Could not open the Data Client: ")+err.Error())
 			return
 		}
-		dc.setMessage("ok", "Data Client aberto. Os preços do mercado vão chegar aqui enquanto o app estiver aberto.")
+		dc.setMessage("ok", L("Data Client aberto. Os preços do mercado vão chegar aqui enquanto o app estiver aberto.", "Data Client opened. Market prices will arrive here while the app is open."))
 	case "restart":
 		if dc.Status().Managed {
 			dc.StopManaged()
 			time.Sleep(1500 * time.Millisecond)
 			if err := dc.startManaged(); err != nil {
-				dc.setMessage("err", "Não consegui reabrir o Data Client: "+err.Error())
+				dc.setMessage("err", L("Não consegui reabrir o Data Client: ", "Could not reopen the Data Client: ")+err.Error())
 				return
 			}
-			dc.setMessage("ok", "Data Client reaberto.")
+			dc.setMessage("ok", L("Data Client reaberto.", "Data Client reopened."))
 			return
 		}
 		if st.Exe == "" {
-			dc.setMessage("err", "Não encontrei o Albion Data Client instalado.")
+			dc.setMessage("err", L("Não encontrei o Albion Data Client instalado.", "Could not find the Albion Data Client installed."))
 			return
 		}
-		dc.setBusy("Esperando a permissão do Windows…")
+		dc.setBusy(L("Esperando a permissão do Windows…", "Waiting for Windows permission…"))
 		res, err := dc.runRestartScript(st.Exe, st.TaskExists || st.LinkedAt > 0)
 		if err != nil {
 			dc.reportScriptError(err, res)
 			return
 		}
-		dc.setMessage("ok", "Data Client reiniciado.")
+		dc.setMessage("ok", L("Data Client reiniciado.", "Data Client restarted."))
 	case "autostart-on", "autostart-off":
 		dc.mu.Lock()
 		dc.prefs.AutoStart = name == "autostart-on"
@@ -499,27 +499,27 @@ func (dc *DataClient) runAction(name string) {
 		// os detectores rodam logo depois da ação
 	case "openlog":
 		if st.LogPath == "" {
-			dc.setMessage("warn", "Ainda não achei o arquivo de log do Data Client.")
+			dc.setMessage("warn", L("Ainda não achei o arquivo de log do Data Client.", "Data Client log file not found yet."))
 			return
 		}
 		if err := openFileInEditor(st.LogPath); err != nil {
-			dc.setMessage("err", "Não consegui abrir o log: "+err.Error())
+			dc.setMessage("err", L("Não consegui abrir o log: ", "Could not open the log: ")+err.Error())
 		}
 	case "opendata":
 		if err := openFolder(dc.app.dataDir); err != nil {
-			dc.setMessage("err", "Não consegui abrir a pasta: "+err.Error())
+			dc.setMessage("err", L("Não consegui abrir a pasta: ", "Could not open the folder: ")+err.Error())
 		}
 	default:
-		dc.setMessage("err", "Ação desconhecida: "+name)
+		dc.setMessage("err", L("Ação desconhecida: ", "Unknown action: ")+name)
 	}
 }
 
 func (dc *DataClient) reportScriptError(err error, result string) {
 	switch {
 	case errors.Is(err, ErrCancelled):
-		dc.setMessage("warn", "Você recusou a permissão do Windows. Nada foi alterado.")
+		dc.setMessage("warn", L("Você recusou a permissão do Windows. Nada foi alterado.", "You declined the Windows permission. Nothing was changed."))
 	case errors.Is(err, ErrNotWindows):
-		dc.setMessage("warn", "Essa ação só funciona no Windows.")
+		dc.setMessage("warn", L("Essa ação só funciona no Windows.", "This action only works on Windows."))
 	default:
 		msg := err.Error()
 		if tail := lastLines(result, 3); tail != "" {
@@ -550,7 +550,7 @@ var unsafeBatchChars = regexp.MustCompile(`[%^&|<>"!]`)
 // instalador oficial cria) com os argumentos pedidos e reinicia o Data Client.
 func (dc *DataClient) runTaskScript(exe, args string, restart bool) (string, error) {
 	if unsafeBatchChars.MatchString(exe) {
-		return "", fmt.Errorf("o caminho do Data Client tem caracteres que o script não aceita: %s", exe)
+		return "", fmt.Errorf(L("o caminho do Data Client tem caracteres que o script não aceita: %s", "the Data Client path has characters the script does not accept: %s"), exe)
 	}
 	resultPath := filepath.Join(dc.app.dataDir, "ligacao-resultado.txt")
 	_ = os.Remove(resultPath)
@@ -582,7 +582,7 @@ func (dc *DataClient) runTaskScript(exe, args string, restart bool) (string, err
 // runRestartScript fecha e reabre o Data Client com permissão de administrador.
 func (dc *DataClient) runRestartScript(exe string, viaTask bool) (string, error) {
 	if unsafeBatchChars.MatchString(exe) {
-		return "", fmt.Errorf("o caminho do Data Client tem caracteres que o script não aceita: %s", exe)
+		return "", fmt.Errorf(L("o caminho do Data Client tem caracteres que o script não aceita: %s", "the Data Client path has characters the script does not accept: %s"), exe)
 	}
 	resultPath := filepath.Join(dc.app.dataDir, "ligacao-resultado.txt")
 	_ = os.Remove(resultPath)
@@ -627,11 +627,11 @@ func (dc *DataClient) runScript(name, content, resultPath string) (string, error
 	case 0:
 		return result, nil
 	case 2:
-		return result, errors.New("o Windows não deixou criar a tarefa de início automático")
+		return result, errors.New(L("o Windows não deixou criar a tarefa de início automático", "Windows did not allow creating the autostart task"))
 	case 3:
-		return result, errors.New("a tarefa foi ajustada, mas o Data Client não abriu")
+		return result, errors.New(L("a tarefa foi ajustada, mas o Data Client não abriu", "the task was updated, but the Data Client did not open"))
 	default:
-		return result, fmt.Errorf("o script terminou com código %d", code)
+		return result, fmt.Errorf(L("o script terminou com código %d", "the script ended with code %d"), code)
 	}
 }
 

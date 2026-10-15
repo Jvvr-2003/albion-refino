@@ -87,9 +87,9 @@ func (a *App) applyUpdate() {
 	if rel == nil {
 		r, err := latestRelease()
 		if err != nil || r == nil {
-			msg := "Você já está na versão mais nova."
+			msg := L("Você já está na versão mais nova.", "You are already on the newest version.")
 			if err != nil {
-				msg = "Não consegui falar com o GitHub: " + err.Error()
+				msg = L("Não consegui falar com o GitHub: ", "Could not reach GitHub: ") + err.Error()
 			}
 			a.setUpdate(func(s *UpdateStatus) { s.State, s.Error = "error", msg })
 			return

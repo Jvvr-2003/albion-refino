@@ -70,7 +70,7 @@ func fetchAODP(ctx context.Context, server string, ids, cities []string) ([]apiR
 		req.Header.Set("Accept", "application/json")
 		resp, err := aodpClient.Do(req)
 		if err != nil {
-			return all, fmt.Errorf("sem resposta da API do AODP: %w", err)
+			return all, fmt.Errorf(L("sem resposta da API do AODP: %w", "no response from the AODP API: %w"), err)
 		}
 		body, err := io.ReadAll(io.LimitReader(resp.Body, 16<<20))
 		resp.Body.Close()
@@ -78,14 +78,14 @@ func fetchAODP(ctx context.Context, server string, ids, cities []string) ([]apiR
 			return all, err
 		}
 		if resp.StatusCode == http.StatusTooManyRequests {
-			return all, fmt.Errorf("a API do AODP pediu para esperar um pouco (limite de consultas)")
+			return all, fmt.Errorf(L("a API do AODP pediu para esperar um pouco (limite de consultas)", "the AODP API asked to wait a bit (rate limit)"))
 		}
 		if resp.StatusCode != http.StatusOK {
-			return all, fmt.Errorf("a API do AODP respondeu %d", resp.StatusCode)
+			return all, fmt.Errorf(L("a API do AODP respondeu %d", "the AODP API answered %d"), resp.StatusCode)
 		}
 		var rows []apiRow
 		if err := json.Unmarshal(body, &rows); err != nil {
-			return all, fmt.Errorf("resposta da API do AODP em formato inesperado")
+			return all, fmt.Errorf(L("resposta da API do AODP em formato inesperado", "AODP API response in an unexpected format"))
 		}
 		all = append(all, rows...)
 	}

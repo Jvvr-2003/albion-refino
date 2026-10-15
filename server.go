@@ -294,7 +294,27 @@ func (a *App) handleEvents(w http.ResponseWriter, r *http.Request) {
 
 type settingsBody struct {
 	Server string          `json:"server"`
+	Lang   string          `json:"lang"`
 	State  json.RawMessage `json:"state"`
+}
+
+// appLang é o idioma escolhido na tela ("pt" ou "en"), usado nas mensagens do servidor.
+var appLang atomic.Value
+
+// L devolve o texto no idioma do app.
+func L(pt, en string) string {
+	if v, _ := appLang.Load().(string); v == "en" {
+		return en
+	}
+	return pt
+}
+
+func setLang(lang string) {
+	if lang == "en" {
+		appLang.Store("en")
+	} else {
+		appLang.Store("pt")
+	}
 }
 
 func (a *App) handleSettings(w http.ResponseWriter, r *http.Request) {
@@ -311,6 +331,7 @@ func (a *App) handleSettings(w http.ResponseWriter, r *http.Request) {
 	if _, ok := aodpHosts[body.Server]; ok {
 		a.server.Store(body.Server)
 	}
+	setLang(body.Lang)
 	a.settingsMu.Lock()
 	a.settingsRaw = json.RawMessage(raw)
 	a.settingsMu.Unlock()
@@ -333,6 +354,7 @@ func (a *App) loadSettings() {
 	if _, ok := aodpHosts[body.Server]; ok {
 		a.server.Store(body.Server)
 	}
+	setLang(body.Lang)
 }
 
 type aodpRequest struct {

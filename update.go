@@ -109,11 +109,11 @@ func latestRelease() (*releaseInfo, error) {
 	req.Header.Set("User-Agent", "AlbionRefino/"+version)
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("sem resposta do GitHub: %w", err)
+		return nil, fmt.Errorf(L("sem resposta do GitHub: %w", "no response from GitHub: %w"), err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("GitHub respondeu %d", resp.StatusCode)
+		return nil, fmt.Errorf(L("GitHub respondeu %d", "GitHub answered %d"), resp.StatusCode)
 	}
 	var rel ghRelease
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&rel); err != nil {
@@ -127,7 +127,7 @@ func latestRelease() (*releaseInfo, error) {
 			return &releaseInfo{Tag: rel.TagName, Version: strings.TrimPrefix(rel.TagName, "v"), URL: a.URL, Size: a.Size}, nil
 		}
 	}
-	return nil, fmt.Errorf("a release %s não tem o %s", rel.TagName, updateAsset)
+	return nil, fmt.Errorf(L("a release %s não tem o %s", "release %s does not have %s"), rel.TagName, updateAsset)
 }
 
 // installRelease baixa a versão nova e troca o .exe em uso por ela.
@@ -136,18 +136,18 @@ func installRelease(rel *releaseInfo) (string, error) {
 	dl := &http.Client{Timeout: 3 * time.Minute}
 	r2, err := dl.Get(rel.URL)
 	if err != nil {
-		return "", fmt.Errorf("download falhou: %w", err)
+		return "", fmt.Errorf(L("download falhou: %w", "download failed: %w"), err)
 	}
 	defer r2.Body.Close()
 	if r2.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("download respondeu %d", r2.StatusCode)
+		return "", fmt.Errorf(L("download respondeu %d", "download answered %d"), r2.StatusCode)
 	}
 	data, err := io.ReadAll(io.LimitReader(r2.Body, 100<<20))
 	if err != nil {
 		return "", err
 	}
 	if (rel.Size > 0 && int64(len(data)) != rel.Size) || len(data) < 1<<20 || !bytes.HasPrefix(data, exeMagic()) {
-		return "", errors.New("o arquivo baixado não parece um .exe válido")
+		return "", errors.New(L("o arquivo baixado não parece um .exe válido", "the downloaded file does not look like a valid .exe"))
 	}
 	exe, err := os.Executable()
 	if err != nil {
@@ -158,17 +158,17 @@ func installRelease(rel *releaseInfo) (string, error) {
 	}
 	newPath, oldPath := exe+".new", exe+".old"
 	if err := os.WriteFile(newPath, data, 0o755); err != nil {
-		return "", fmt.Errorf("não consegui gravar a versão nova na pasta do app: %w", err)
+		return "", fmt.Errorf(L("não consegui gravar a versão nova na pasta do app: %w", "could not write the new version in the app folder: %w"), err)
 	}
 	_ = os.Remove(oldPath)
 	// No Windows dá para renomear o .exe que está rodando, mas não sobrescrever.
 	if err := os.Rename(exe, oldPath); err != nil {
 		_ = os.Remove(newPath)
-		return "", fmt.Errorf("não consegui trocar o .exe: %w", err)
+		return "", fmt.Errorf(L("não consegui trocar o .exe: %w", "could not replace the .exe: %w"), err)
 	}
 	if err := os.Rename(newPath, exe); err != nil {
 		_ = os.Rename(oldPath, exe)
-		return "", fmt.Errorf("não consegui trocar o .exe: %w", err)
+		return "", fmt.Errorf(L("não consegui trocar o .exe: %w", "could not replace the .exe: %w"), err)
 	}
 	return exe, nil
 }
@@ -208,7 +208,7 @@ func selfUpdate(logger *log.Logger) (bool, error) {
 	}
 	if err := relaunch(exe, "-updated-from="+version); err != nil {
 		rollbackRelease(exe)
-		return false, fmt.Errorf("não consegui abrir a versão nova: %w", err)
+		return false, fmt.Errorf(L("não consegui abrir a versão nova: %w", "could not open the new version: %w"), err)
 	}
 	logger.Printf("atualização: versão %s aberta, fechando a %s", rel.Tag, version)
 	return true, nil
