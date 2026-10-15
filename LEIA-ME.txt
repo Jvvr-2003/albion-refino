@@ -1,0 +1,52 @@
+ALBION REFINO E POÇÕES 1.0.0
+Calculadora de refino e de poções do Albion Online com preços ao vivo do mercado.
+
+
+COMO USAR
+
+1. Dê dois cliques em AlbionRefino.exe. Abre uma janela com a calculadora.
+   Na primeira vez o Windows pode mostrar "O Windows protegeu o computador".
+   Clique em "Mais informações" e depois em "Executar assim mesmo".
+
+2. Abra a aba Captura e clique em "Ligar ao app". Aceite a permissão do Windows.
+   Isso é feito uma vez só: o Albion Data Client oficial (que já inicia com o
+   Windows) passa a mandar uma cópia dos preços para o app.
+
+3. Entre no jogo, abra o mercado e pesquise os itens da receita.
+   Os preços entram na hora, marcados como "ao vivo".
+   Nas abas Refino e Poções, o quadro "Pesquise no mercado" mostra o que falta.
+   Clique num item do quadro para copiar o nome e colar na busca do jogo.
+
+
+O QUE O APP FAZ COM O DATA CLIENT
+
+- Usa o Albion Data Client oficial que está instalado no PC, sem modificar nada
+  nele. O Data Client continua se atualizando sozinho.
+- "Ligar ao app" recria a tarefa de início automático que o instalador do Data
+  Client cria, só acrescentando a opção oficial "-p http://127.0.0.1:47115/ingest",
+  e reinicia o Data Client.
+- O Data Client continua enviando os preços para o Albion Online Data Project.
+- Com o app fechado, o Data Client só anota no log dele que não conseguiu
+  entregar a cópia. Nada mais muda.
+- Se o Data Client estiver fechado quando o app abrir, o app abre um junto com
+  ele e fecha quando você fechar o app (dá para desligar isso na aba Captura).
+- Para desfazer a ligação: aba Captura > "Desligar do app".
+
+
+PROBLEMAS COMUNS
+
+- "O Data Client não sabe onde você está": troque de mapa uma vez no jogo.
+  Isso acontece quando o Data Client abre depois que você já está logado.
+- Nenhum preço chega: veja na aba Captura se o Npcap está instalado e se o
+  Data Client está rodando. Se você usa VPN ou acelerador de jogo (ExitLag e
+  parecidos), teste com ele desligado: o Data Client pode não enxergar o tráfego.
+- A janela do app fecha e o app fecha junto. Para abrir de novo, dois cliques
+  no AlbionRefino.exe.
+- Preços sem "ao vivo" vêm da API do Albion Online Data Project e mostram há
+  quanto tempo foram vistos.
+
+
+ARQUIVOS
+
+- Preços, ajustes e log do app ficam em %LOCALAPPDATA%\AlbionRefino.
+- O código-fonte está na pasta codigo-fonte (Go, sem dependências externas).

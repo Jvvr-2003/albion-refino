@@ -1,0 +1,1275 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Albion Refino e Poções</title>
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=Marcellus+SC&display=swap">
+<style>
+/* Layout: mesa do mercador. Receita e mercado à esquerda, livro-caixa fixo à direita; a aba Captura mostra a ligação com o Data Client */
+:root{
+  --bg:#E4E8EB;
+  --panel:#F8F9FA;
+  --inset:#EDF0F2;
+  --ink:#1A222A;
+  --muted:#58636F;
+  --line:#C7CFD6;
+  --accent:#86560B;
+  --accent-ink:#FFFDF7;
+  --accent-soft:#F2E5C8;
+  --good:#1C7542;
+  --good-soft:#DCEEE2;
+  --bad:#AC3128;
+  --bad-soft:#F5DEDB;
+  --warn:#8F5C08;
+  --warn-soft:#F4E9D2;
+  --info:#285E9C;
+  --info-soft:#DDE8F5;
+  --ring:#2C6CB0;
+  --shadow:rgba(16,24,32,.10);
+  --e0:#86909A; --e1:#2E8D45; --e2:#2D6EC6; --e3:#8648BF; --e4:#B4831A;
+  --f-display:"Marcellus SC","Cinzel",Georgia,"Times New Roman",serif;
+  --f-body:"Alegreya Sans","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  --f-mono:ui-monospace,"Cascadia Mono",Consolas,"SFMono-Regular",Menlo,monospace;
+  --radius:10px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151A; --panel:#182027; --inset:#131920; --ink:#E9E5DA; --muted:#9AA4AE; --line:#2B353F;
+    --accent:#E2B056; --accent-ink:#1A1408; --accent-soft:#392E19;
+    --good:#5DC487; --good-soft:#15301F; --bad:#F06C60; --bad-soft:#3A1C19; --warn:#E6B54D; --warn-soft:#352A14;
+    --info:#7FB2EE; --info-soft:#172A40;
+    --ring:#74AAEB; --shadow:rgba(0,0,0,.35);
+    --e0:#9AA3AB; --e1:#58C36C; --e2:#5E99EE; --e3:#B27DE9; --e4:#E6BA4C;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151A; --panel:#182027; --inset:#131920; --ink:#E9E5DA; --muted:#9AA4AE; --line:#2B353F;
+  --accent:#E2B056; --accent-ink:#1A1408; --accent-soft:#392E19;
+  --good:#5DC487; --good-soft:#15301F; --bad:#F06C60; --bad-soft:#3A1C19; --warn:#E6B54D; --warn-soft:#352A14;
+  --info:#7FB2EE; --info-soft:#172A40;
+  --ring:#74AAEB; --shadow:rgba(0,0,0,.35);
+  --e0:#9AA3AB; --e1:#58C36C; --e2:#5E99EE; --e3:#B27DE9; --e4:#E6BA4C;
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:var(--f-body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:18px 48px;
+}
+[hidden]{display:none!important}
+.app{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+small{font-size:13px}
+.muted{color:var(--muted)}
+a{color:var(--accent)}
+
+/* topo */
+.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:14px 24px}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.brand img{width:44px;height:44px;flex:none}
+.brand h1{font-family:var(--f-display);font-weight:400;font-size:clamp(26px,3.4vw,36px);line-height:1.05;letter-spacing:.02em;margin:0;text-wrap:balance}
+.brand h1 span{color:var(--accent)}
+.brand p{margin:4px 0 0;color:var(--muted)}
+.globals{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end}
+
+/* selo da captura no topo */
+.cap-pill{display:inline-flex;align-items:center;gap:9px;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:7px 14px 7px 12px;font-weight:700;max-width:100%}
+.cap-pill .pdot{width:10px;height:10px;border-radius:50%;background:var(--muted);flex:none}
+.cap-pill small{font-weight:500;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cap-pill.live .pdot{background:var(--good);box-shadow:0 0 0 4px var(--good-soft)}
+.cap-pill.wait .pdot{background:var(--info)}
+.cap-pill.warn .pdot{background:var(--warn)}
+.cap-pill.bad .pdot{background:var(--bad)}
+.cap-pill.pulse .pdot{animation:pulse 1s ease-out}
+@keyframes pulse{0%{box-shadow:0 0 0 0 var(--good)}100%{box-shadow:0 0 0 12px transparent}}
+
+/* abas */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{display:inline-flex;align-items:center;gap:8px;padding:10px 16px 11px;border:0;background:none;color:var(--muted);font-size:18px;font-weight:700;border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tab svg{width:22px;height:22px;flex:none}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab:hover{color:var(--ink)}
+.tab .count{font-size:12px;font-weight:800;background:var(--good-soft);color:var(--good);border-radius:999px;padding:1px 7px}
+
+.banner{display:flex;gap:10px;align-items:flex-start;background:var(--bad-soft);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px}
+.banner b{color:var(--bad)}
+
+/* grade principal */
+.grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:start}
+.form{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);min-width:0}
+.form > section{padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.form > section + section{border-top:1px solid var(--line)}
+.sec{font-family:var(--f-display);font-weight:400;font-size:20px;letter-spacing:.03em;margin:0;text-wrap:balance;line-height:1.15}
+.sec-row{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;justify-content:space-between}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px 14px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.lbl{font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.hint{font-size:13px;color:var(--muted)}
+input,select,textarea{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0;font-size:16px}
+input{font-variant-numeric:tabular-nums}
+input:hover,select:hover{border-color:var(--muted)}
+input[type="checkbox"]{width:18px;height:18px;padding:0;accent-color:var(--accent);flex:none}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--inset);border-radius:999px;padding:6px 12px;font-weight:500;line-height:1.2}
+.chip:hover:not(:disabled){border-color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip:disabled{opacity:.38}
+.chip small{opacity:.8;font-size:12px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;flex:none;background:var(--e0)}
+.dot.e1{background:var(--e1)}.dot.e2{background:var(--e2)}.dot.e3{background:var(--e3)}.dot.e4{background:var(--e4)}
+.chip[aria-pressed="true"] .dot{box-shadow:0 0 0 2px var(--accent-ink)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--inset);max-width:100%}
+.seg button{border:0;background:none;padding:7px 12px;font-weight:500;white-space:nowrap}
+.seg button + button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.recipe{margin:0;padding:10px 12px;background:var(--inset);border-radius:8px;font-size:15px;line-height:1.5}
+.recipe b{font-variant-numeric:tabular-nums}
+.rrr-line{margin:0;font-size:15px}
+.rrr-line b{color:var(--accent)}
+
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:9px 16px;font-weight:700}
+.btn:hover:not(:disabled){filter:brightness(1.06)}
+.btn:disabled{opacity:.55}
+.btn.ghost{background:var(--panel);color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover:not(:disabled){border-color:var(--muted);filter:none}
+.btn[aria-busy="true"]{opacity:.7;cursor:progress}
+.linkbtn{border:0;background:none;padding:0;color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:2px;font-size:13px}
+.status{font-size:14px;color:var(--muted)}
+.status.ok{color:var(--good)}.status.warn{color:var(--warn)}.status.err{color:var(--bad)}
+.fetch{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+
+/* dicas de mercado */
+.here{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:9px 12px;border-radius:8px;background:var(--info-soft)}
+.here b{color:var(--info)}
+.todo{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:8px;border:1px dashed var(--line);background:var(--inset)}
+.todo p{margin:0}
+.todo .chips .chip{background:var(--panel)}
+.todo .chip .city{font-size:12px;color:var(--muted)}
+
+/* linhas de preço */
+.prices{display:flex;flex-direction:column}
+.prow,.phead{display:grid;grid-template-columns:minmax(0,1fr) 3.4rem 9.5rem 5.8rem;grid-template-areas:"name qty pin sub";gap:4px 12px;align-items:center}
+.phead{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-bottom:6px}
+.phead span:nth-child(2){grid-area:qty}.phead span:nth-child(3){grid-area:pin}.phead span:nth-child(4){grid-area:sub;text-align:right}
+.prow{padding:9px 6px;margin:0 -6px;border-top:1px solid var(--line);border-radius:6px}
+.prow.flash{animation:flash 1.4s ease-out}
+@keyframes flash{0%{background:var(--good-soft)}100%{background:transparent}}
+.pname{grid-area:name;display:flex;align-items:center;gap:8px;min-width:0}
+.pn{min-width:0;overflow-wrap:anywhere}
+.tag{font-size:12px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 5px;white-space:nowrap}
+.pqty{grid-area:qty;font-variant-numeric:tabular-nums;color:var(--muted);font-weight:700}
+.pin{grid-area:pin;display:flex;flex-direction:column;gap:3px;min-width:0}
+.pin input{text-align:right}
+.psub{grid-area:sub;text-align:right;font-variant-numeric:tabular-nums}
+.badges{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;justify-content:flex-end}
+.b{font-size:12px;font-weight:700;border-radius:4px;padding:1px 6px;white-space:nowrap;background:var(--inset);color:var(--muted)}
+.b.live{background:var(--good-soft);color:var(--good)}
+.b.api{background:var(--info-soft);color:var(--info)}
+.b.old{background:var(--warn-soft);color:var(--warn)}
+.b.man{background:var(--accent-soft);color:var(--accent)}
+.b.none{background:var(--bad-soft);color:var(--bad)}
+.psep{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:14px 0 4px}
+.src-note{margin:0;font-size:13px;color:var(--muted)}
+@media (max-width:600px){
+  .phead{display:none}
+  .prow{grid-template-columns:2.8rem minmax(0,1fr) 5.4rem;grid-template-areas:"name name name" "qty pin sub";align-items:start}
+  .pqty,.psub{padding-top:9px}
+}
+
+/* livro-caixa */
+.ledger{position:sticky;top:12px;min-width:0;max-height:calc(100vh - 24px);overflow-y:auto;overscroll-behavior:contain;border-radius:var(--radius)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 10px 30px -18px var(--shadow);padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.eyebrow{margin:0;font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.hero{display:flex;flex-direction:column;gap:4px}
+.hero-num{font-family:var(--f-display);font-size:clamp(40px,5vw,54px);line-height:1;letter-spacing:.01em;font-variant-numeric:tabular-nums}
+.hero-num small{font-family:var(--f-body);font-size:16px;color:var(--muted);letter-spacing:0;margin-left:6px}
+.pos .hero-num,.pos.val{color:var(--good)}.neg .hero-num,.neg.val{color:var(--bad)}
+.meta{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 10px;font-weight:700;font-size:14px;background:var(--inset)}
+.pill.pos{background:var(--good-soft);color:var(--good)}.pill.neg{background:var(--bad-soft);color:var(--bad)}
+.missing{margin:0;padding:12px 14px;background:var(--bad-soft);border-radius:8px}
+.missing ul{margin:6px 0 0;padding-left:18px}
+.bk{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:15px}
+.bk caption{text-align:left;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-bottom:4px}
+.bk td{padding:5px 0;border-bottom:1px dashed var(--line);vertical-align:top}
+.bk td:last-child{text-align:right;white-space:nowrap;padding-left:12px}
+.bk tr.sum td{font-weight:700;border-bottom:1px solid var(--line)}
+.bk tr.total td{font-weight:800;font-size:17px;border-bottom:0;padding-top:8px}
+.bk .sub{color:var(--muted);font-size:13px}
+.block h3{margin:0 0 6px;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.block ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px;font-variant-numeric:tabular-nums}
+.block li{display:flex;justify-content:space-between;gap:12px}
+.block li span:last-child{color:var(--muted);white-space:nowrap}
+.block li.warnline span{color:var(--warn)!important}
+.block p{margin:0}
+
+/* comparação */
+.compare{display:flex;flex-direction:column;gap:10px}
+.compare p{margin:0}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel)}
+.cmp{border-collapse:separate;border-spacing:4px;width:100%;min-width:600px;font-variant-numeric:tabular-nums}
+.cmp th{font-size:13px;color:var(--muted);text-align:left;font-weight:700;white-space:nowrap;padding:6px 8px}
+.cmp th .dot{margin-right:5px;vertical-align:baseline}
+.cmp th small{font-weight:500;margin-left:4px}
+.cmp td{padding:0}
+.cell{width:100%;display:flex;flex-direction:column;align-items:flex-start;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--inset);text-align:left;line-height:1.25}
+.cell b{font-size:16px}
+.cell small{color:var(--muted);font-size:12.5px}
+.cell.pos b{color:var(--good)}.cell.neg b{color:var(--bad)}
+.cell.miss{color:var(--muted)}
+.cell.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.cell:hover{border-color:var(--muted)}
+.cell .lv{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--good);margin-left:6px;vertical-align:middle}
+
+/* aba Captura */
+.capgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:18px;align-items:start}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.checks li{display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.checks li:first-child{border-top:0;padding-top:0}
+.checks .ic{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:800;background:var(--inset);color:var(--muted)}
+.checks .ok .ic{background:var(--good-soft);color:var(--good)}
+.checks .warn .ic{background:var(--warn-soft);color:var(--warn)}
+.checks .bad .ic{background:var(--bad-soft);color:var(--bad)}
+.checks .wait .ic{background:var(--info-soft);color:var(--info)}
+.checks b{display:block}
+.checks span{color:var(--muted);font-size:14.5px;overflow-wrap:anywhere}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.msg{margin:0;padding:10px 12px;border-radius:8px;background:var(--inset)}
+.msg.ok{background:var(--good-soft)}.msg.warn{background:var(--warn-soft)}.msg.err{background:var(--bad-soft)}
+.toggle{display:flex;gap:10px;align-items:flex-start;font-size:15px}
+.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+details.manual{border-top:1px solid var(--line);padding-top:12px}
+details.manual summary{cursor:pointer;font-weight:700}
+details.manual p{margin:10px 0 0}
+.code{display:flex;gap:8px;align-items:flex-start;margin-top:8px}
+.code code{flex:1;min-width:0;font-family:var(--f-mono);font-size:12.5px;background:var(--inset);border:1px solid var(--line);border-radius:6px;padding:8px 10px;overflow-wrap:anywhere;user-select:all}
+.feed{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;max-height:420px;overflow-y:auto}
+.feed li{padding:9px 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.feed li:first-child{border-top:0}
+.feed .fh{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;font-size:14px}
+.feed .fh b{font-size:15px}
+.feed .fi{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;font-variant-numeric:tabular-nums}
+.feed .fi span{white-space:nowrap}
+.feed .fi i{font-style:normal;color:var(--muted)}
+.logbox{margin:0;font-family:var(--f-mono);font-size:12.5px;line-height:1.5;background:var(--inset);border:1px solid var(--line);border-radius:8px;padding:10px 12px;max-height:320px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+.empty{color:var(--muted);margin:0}
+
+/* notas */
+.notes{border-top:1px solid var(--line);padding-top:14px;color:var(--muted);font-size:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px 28px}
+.notes h2{grid-column:1/-1;margin:0;font-family:var(--f-display);font-weight:400;font-size:18px;color:var(--ink)}
+.notes p{margin:0;max-width:65ch}
+.notes b{color:var(--ink);font-weight:700}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:9px 16px;border-radius:999px;font-weight:700;box-shadow:0 8px 24px -10px var(--shadow);z-index:40;max-width:calc(100vw - 32px)}
+
+.dock{display:none}
+@media (max-width:980px){
+  .capgrid{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:880px){
+  body{padding-block:14px 104px}
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .ledger{position:static;max-height:none;overflow:visible}
+  .dock{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;align-items:center;gap:14px;justify-content:space-between;
+    background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -8px 24px -12px var(--shadow);
+    padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+  .dock div{display:flex;flex-direction:column;min-width:0}
+  .dock .d-lbl{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .dock b{font-size:18px;font-variant-numeric:tabular-nums}
+  .dock .pos{color:var(--good)}.dock .neg{color:var(--bad)}
+  .dock button{border:1px solid var(--line);background:var(--inset);border-radius:8px;padding:8px 12px;font-weight:700;white-space:nowrap}
+}
+@media (prefers-reduced-motion: reduce){ *{animation:none!important;scroll-behavior:auto!important} }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <img src="/icon.svg" alt="">
+      <div>
+        <h1>Albion <span>Refino e Poções</span></h1>
+        <p>Preços ao vivo do mercado pelo Albion Data Client, com retorno de recursos, foco e taxas.</p>
+      </div>
+    </div>
+    <div class="globals">
+      <button type="button" class="cap-pill" id="cap-pill" data-tab="cap" aria-label="Ver captura de preços"><i class="pdot"></i><span id="cap-pill-text">Carregando…</span></button>
+      <label class="fld"><span class="lbl">Servidor</span>
+        <select id="g-server">
+          <option value="west">Américas</option>
+          <option value="europe">Europa</option>
+          <option value="east">Ásia</option>
+        </select>
+      </label>
+      <div class="fld"><span class="lbl">Premium</span>
+        <div class="seg" role="group" aria-label="Premium" id="g-premium">
+          <button type="button" data-seg="premium" data-v="1" aria-pressed="true">Sim · imposto 4%</button>
+          <button type="button" data-seg="premium" data-v="0" aria-pressed="false">Não · 8%</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Seções">
+    <button type="button" class="tab" role="tab" id="tab-ref" data-tab="ref" aria-selected="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18.5h18l-2.6-7.5H5.6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M7.4 11l1.8-5.5h5.6l1.8 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      Refino
+    </button>
+    <button type="button" class="tab" role="tab" id="tab-pot" data-tab="pot" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 3h5M10.5 3v5.6L5.9 16.9A2.6 2.6 0 0 0 8.2 20.8h7.6a2.6 2.6 0 0 0 2.3-3.9L13.5 8.6V3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.8 14.5h8.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Poções
+    </button>
+    <button type="button" class="tab" role="tab" id="tab-cap" data-tab="cap" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M7.5 12a4.5 4.5 0 0 1 9 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="13.5" r="1.8" fill="currentColor"/><path d="M12 15.3V20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Captura <span class="count" id="tab-cap-count" hidden></span>
+    </button>
+  </nav>
+
+  <div class="banner" id="lost" hidden><span><b>O app parou de responder.</b> Feche esta janela e abra o AlbionRefino.exe de novo.</span></div>
+
+  <div id="calc">
+    <main class="grid">
+      <div class="form" id="form" role="tabpanel"></div>
+      <aside class="ledger" id="ledger" aria-live="polite"></aside>
+    </main>
+    <section class="compare" id="compare" style="margin-top:16px"></section>
+  </div>
+
+  <div id="cap" role="tabpanel" aria-labelledby="tab-cap" hidden></div>
+
+  <footer class="notes" id="notes">
+    <h2>Como a conta é feita</h2>
+    <p><b>Preços ao vivo</b>: o Albion Data Client lê o que o jogo recebe quando você abre o mercado e manda uma cópia para este app. Pesquise os itens no mercado e os preços entram na hora. Itens que você não abriu vêm da API do Albion Online Data Project.</p>
+    <p><b>Retorno de recursos</b> = bônus ÷ (1 + bônus). O bônus soma 18% em qualquer cidade (0% em ilha), +40% na cidade com bônus daquele refino, +15% para poções em Brecilien, +59% com foco e o bônus diário (+10% ou +20%) quando ele vale para a categoria.</p>
+    <p><b>Taxa da estação</b> ≈ valor do item × 0,1125 × (taxa por 100 de nutrição ÷ 100). O valor do item vem dos arquivos do jogo; a taxa você vê na própria estação.</p>
+    <p><b>Mercado</b>: ordem de venda paga 2,5% de anúncio e, ao vender, o imposto (4% com premium, 8% sem). Vender na hora para uma ordem de compra paga só o imposto. Ordem de compra também paga 2,5%.</p>
+    <p><b>Médias</b>: o retorno é uma média; em poucos crafts o resultado real varia. A quantidade para comprar já desconta o que volta, refinando de novo com o material devolvido.</p>
+    <p><b>Receitas, foco base e valores de item</b> foram extraídos dos arquivos do jogo (ao-bin-dumps) em outubro de 2026, com os nomes do cliente em português.</p>
+  </footer>
+</div>
+
+<div class="dock" id="dock" aria-live="polite"></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(async () => {
+'use strict';
+
+const $ = (s, el) => (el || document).querySelector(s);
+
+/* ---------- carga inicial ---------- */
+let DATA, INIT;
+try {
+  const [d, st] = await Promise.all([
+    fetch('/data.json').then(r => { if (!r.ok) throw new Error('data'); return r.json(); }),
+    fetch('/api/state').then(r => { if (!r.ok) throw new Error('state'); return r.json(); }),
+  ]);
+  DATA = d; INIT = st;
+} catch (e) {
+  $('#lost').hidden = false;
+  return;
+}
+
+/* ---------- constantes do jogo ---------- */
+const SERVERS = { west: 'Américas', europe: 'Europa', east: 'Ásia' };
+const CITIES = ['Thetford', 'Fort Sterling', 'Lymhurst', 'Bridgewatch', 'Martlock', 'Caerleon', 'Brecilien'];
+const CITY_SPEC = {
+  'Thetford': { ore: 0.40 }, 'Lymhurst': { fiber: 0.40 }, 'Bridgewatch': { rock: 0.40 },
+  'Martlock': { hide: 0.40 }, 'Fort Sterling': { wood: 0.40 }, 'Caerleon': {}, 'Brecilien': { potion: 0.15 },
+};
+const SPEC = { wood: 0.40, ore: 0.40, fiber: 0.40, hide: 0.40, rock: 0.40, potion: 0.15 };
+const BASE_CITY = 0.18, FOCUS_BONUS = 0.59, NUTRITION = 0.1125, FOCUS_PER_DAY = 10000;
+const FRESH_MS = 60 * 60e3;
+const FAM = {
+  WOOD:  { label: 'Madeira', out: 'Tábuas', unit: 'tábua', city: 'Fort Sterling' },
+  ORE:   { label: 'Minério', out: 'Barras', unit: 'barra', city: 'Thetford' },
+  FIBER: { label: 'Fibra',   out: 'Tecido', unit: 'tecido', city: 'Lymhurst' },
+  HIDE:  { label: 'Pelego',  out: 'Couro',  unit: 'couro', city: 'Martlock' },
+  ROCK:  { label: 'Pedra',   out: 'Blocos', unit: 'bloco', city: 'Bridgewatch' },
+};
+const CAT_WORD = { wood: 'madeira', ore: 'minério', fiber: 'fibra', hide: 'pelego', rock: 'pedra', potion: 'poção' };
+const TIER_NAME = { 2: 'Novato', 3: 'Iniciante', 4: 'Adepto', 5: 'Perito', 6: 'Mestre', 7: 'Grão-mestre', 8: 'Ancião' };
+const ENCH = ['Normal', 'Incomum', 'Raro', 'Excepcional', 'Prístino'];
+const POT_TYPES = [
+  ['HEAL', 'Cura'], ['ENERGY', 'Energia'], ['REVIVE', 'Crescimento'], ['STONESKIN', 'Resistência'],
+  ['SLOWFIELD', 'Pegajosa'], ['COOLDOWN', 'Venenosa'], ['CLEANSE', 'Invisibilidade'], ['MOB_RESET', 'Calmante'],
+  ['CLEANSE2', 'Purificadora'], ['ACID', 'Ácida'], ['BERSERK', 'Fúria'], ['LAVA', 'Infernal'],
+  ['GATHER', 'Coleta'], ['TORNADO', 'Tornado engarrafado'], ['LIFEWARD', 'Salva-vidas'],
+];
+const POTS = {}, POT_BY_TYPE = {};
+for (const [id, tier, type, lv] of DATA.P) {
+  POTS[id] = { id, tier, type, lv };
+  (POT_BY_TYPE[type] = POT_BY_TYPE[type] || []).push(id);
+}
+for (const t in POT_BY_TYPE) POT_BY_TYPE[t].sort((a, b) => POTS[a].tier - POTS[b].tier);
+const FAM_CAT = { WOOD: 'wood', ORE: 'ore', FIBER: 'fiber', HIDE: 'hide', ROCK: 'rock' };
+
+/* ---------- formatação ---------- */
+const NF0 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
+const NF1 = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const NF2 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 });
+const MINUS = '−';
+const money = v => { const a = Math.abs(v); return (a > 0 && a < 100 ? NF1 : NF0).format(v); };
+const signed = v => (v > 0.0499 ? '+' + money(v) : v < -0.0499 ? MINUS + money(-v) : '0');
+const neg = v => (v > 0.0499 ? MINUS + money(v) : '0');
+const pct = v => NF1.format(v * 100) + '%';
+const kk = v => {
+  const a = Math.abs(v), s = v < -0.5 ? MINUS : (v > 0.5 ? '+' : '');
+  if (a >= 1e6) return s + NF2.format(a / 1e6) + 'kk';
+  if (a >= 1e3) return s + NF2.format(a / 1e3) + 'k';
+  return s + NF0.format(a);
+};
+const fmtIn = v => (Number.isInteger(v) ? NF0.format(v) : NF2.format(v));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const nm = id => DATA.N[id] || id;
+const tierOf = id => { const m = /^T(\d)/.exec(id); return m ? +m[1] : 0; };
+const enchOf = id => { const m = /@(\d)$/.exec(id); return m ? +m[1] : 0; };
+const tierTag = id => { const t = tierOf(id), e = enchOf(id); return t > 1 ? `T${t}${e ? '.' + e : ''}` : ''; };
+const ck = c => String(c).replace(/\s+/g, '').toLowerCase();
+const clock = t => new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+function parseNum(str) {
+  if (str == null) return null;
+  let s = String(str).trim().toLowerCase().replace(/\s|prata/g, '');
+  if (!s) return null;
+  let mult = 1;
+  if (s.endsWith('kk')) { mult = 1e6; s = s.slice(0, -2); }
+  else if (s.endsWith('m')) { mult = 1e6; s = s.slice(0, -1); }
+  else if (s.endsWith('k')) { mult = 1e3; s = s.slice(0, -1); }
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  if (!/^\d*\.?\d+$/.test(s)) return null;
+  const v = Number(s) * mult;
+  return Number.isFinite(v) ? v : null;
+}
+function ago(t) {
+  if (!t) return 'sem data';
+  const m = Math.max(0, (Date.now() - t) / 60000);
+  if (m < 1) return 'agora';
+  if (m < 60) return 'há ' + Math.round(m) + ' min';
+  const h = m / 60;
+  if (h < 48) return 'há ' + Math.round(h) + ' h';
+  return 'há ' + Math.round(h / 24) + ' d';
+}
+function agoShort(t) {
+  if (!t) return '';
+  const s = Math.max(0, (Date.now() - t) / 1000);
+  if (s < 60) return 'há ' + Math.max(1, Math.round(s)) + ' s';
+  return ago(t);
+}
+
+/* ---------- estado ---------- */
+const DEFAULTS = {
+  tab: 'ref', server: 'west', premium: true,
+  ref: { fam: 'WOOD', tier: 4, ench: 0, loc: 'Fort Sterling', manualBonus: 0, focus: true, daily: 0, qty: 100, fee: 500,
+         buyMode: 'instant', sellMode: 'order', buyCity: 'Fort Sterling', sellCity: 'Fort Sterling', focusCost: {} },
+  pot: { id: 'T4_POTION_HEAL', ench: 0, loc: 'Brecilien', manualBonus: 0, focus: false, daily: 0, qty: 10, fee: 500,
+         buyMode: 'instant', sellMode: 'order', buyCity: 'Brecilien', sellCity: 'Brecilien', focusCost: {} },
+};
+function merge(def, sav) {
+  if (!sav || typeof sav !== 'object') return def;
+  for (const k of Object.keys(def)) {
+    if (!(k in sav)) continue;
+    if (k === 'focusCost') { def[k] = sav[k] && typeof sav[k] === 'object' ? sav[k] : {}; continue; }
+    if (def[k] && typeof def[k] === 'object') def[k] = merge(def[k], sav[k]);
+    else if (typeof sav[k] === typeof def[k]) def[k] = sav[k];
+  }
+  return def;
+}
+const saved = INIT.settings && INIT.settings.state;
+let S = merge(JSON.parse(JSON.stringify(DEFAULTS)), saved && saved.S);
+let MAN = saved && saved.MAN && typeof saved.MAN === 'object' ? saved.MAN : {};
+let BOOK = INIT.book || {};
+let STATUS = INIT.status || {};
+let FEED = INIT.feed || [];
+let LOG = INIT.log || [];
+if (!FAM[S.ref.fam]) S.ref.fam = 'WOOD';
+if (!refRec(S.ref.fam, S.ref.tier, 0)) S.ref.tier = 4;
+if (!refRec(S.ref.fam, S.ref.tier, S.ref.ench)) S.ref.ench = 0;
+if (!POTS[S.pot.id]) S.pot.id = 'T4_POTION_HEAL';
+if (!potRec(S.pot.id, S.pot.ench)) S.pot.ench = 0;
+if (!SERVERS[S.server]) S.server = 'west';
+if (!['ref', 'pot', 'cap'].includes(S.tab)) S.tab = 'ref';
+for (const st of [S.ref, S.pot]) {
+  if (!CITIES.includes(st.buyCity)) st.buyCity = 'Fort Sterling';
+  if (!CITIES.includes(st.sellCity)) st.sellCity = 'Fort Sterling';
+}
+
+function api(method, url, body) {
+  return fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json', 'X-Albion-Refino': '1' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  }).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+}
+let saveTimer = 0;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    api('PUT', '/api/settings', { server: S.server, state: { S, MAN } }).catch(() => {});
+  }, 400);
+}
+const calcTab = () => (S.tab === 'pot' ? 'pot' : 'ref');
+const cur = () => (calcTab() === 'ref' ? S.ref : S.pot);
+const catOf = () => (calcTab() === 'ref' ? FAM_CAT[S.ref.fam] : 'potion');
+const unitOf = () => (calcTab() === 'ref' ? FAM[S.ref.fam].unit : 'poção');
+
+/* ---------- receitas ---------- */
+function refRec(fam, t, e) {
+  const r = DATA.F[fam] && DATA.F[fam].r[t + '.' + e];
+  if (!r) return null;
+  return { product: r[0], out: 1, focus: r[1], iv: r[2], ing: r[3].map(([id, q]) => ({ id, q, ret: 1 })) };
+}
+function potRec(id, e) {
+  const p = POTS[id], l = p && p.lv[String(e)];
+  if (!l) return null;
+  return { product: l[0], out: l[1], focus: l[2], iv: l[3], ing: l[4].map(([iid, q, ret]) => ({ id: iid, q, ret })) };
+}
+const curRec = () => (calcTab() === 'ref' ? refRec(S.ref.fam, S.ref.tier, S.ref.ench) : potRec(S.pot.id, S.pot.ench));
+const typeLabel = type => (POT_TYPES.find(t => t[0] === type) || [type, type])[1];
+
+/* ---------- preços ---------- */
+function bookSide(id, city, useOffers) {
+  const e = (BOOK[S.server] || {})[id + '|' + city];
+  return e ? (useOffers ? e.o : e.r) : null;
+}
+function priceOf(id, role, st) {
+  st = st || cur();
+  const city = role === 'buy' ? st.buyCity : st.sellCity;
+  const key = id + '|' + ck(city) + '|' + role;
+  if (MAN[key] != null) return { v: MAN[key], src: 'man', key };
+  const useOffers = role === 'buy' ? st.buyMode === 'instant' : st.sellMode === 'order';
+  const side = bookSide(id, city, useOffers);
+  if (side && side.p > 0) return { v: side.p, src: side.s === 'l' ? 'live' : 'api', at: side.t, a: side.a || 0, key };
+  return null;
+}
+const isFresh = p => !!p && (p.src === 'man' || ((p.src === 'live' || p.src === 'api') && Date.now() - p.at < FRESH_MS));
+function bookFallback(id, role, st) {
+  const city = role === 'buy' ? st.buyCity : st.sellCity;
+  const useOffers = role === 'buy' ? st.buyMode === 'instant' : st.sellMode === 'order';
+  const side = bookSide(id, city, useOffers);
+  if (!side || !(side.p > 0)) return '';
+  return side.s === 'l' ? 'o preço ao vivo' : 'o preço da API';
+}
+
+/* ---------- cálculo ---------- */
+function bonusParts(st, cat, focusOn) {
+  let base = 0, spec = 0;
+  if (st.loc === 'manual') base = (Number(st.manualBonus) || 0) / 100;
+  else if (st.loc === 'island') base = 0;
+  else if (st.loc === 'island-bonus') spec = SPEC[cat] || 0;
+  else { base = BASE_CITY; spec = (CITY_SPEC[st.loc] || {})[cat] || 0; }
+  const focus = focusOn ? FOCUS_BONUS : 0, daily = (Number(st.daily) || 0) / 100;
+  const total = base + spec + focus + daily;
+  return { base, spec, focus, daily, total, rrr: total > 0 ? total / (1 + total) : 0 };
+}
+function compute(rec, st, cat) {
+  st = st || cur(); cat = cat || catOf();
+  const taxRate = S.premium ? 0.04 : 0.08;
+  const setupSell = st.sellMode === 'order' ? 0.025 : 0;
+  const setupBuy = st.buyMode === 'order' ? 0.025 : 0;
+  const B = bonusParts(st, cat, st.focus), B0 = bonusParts(st, cat, false), BF = bonusParts(st, cat, true);
+  const missing = [];
+  let gross = 0, retBase = 0, live = 0;
+  const lines = rec.ing.map(g => {
+    const p = priceOf(g.id, 'buy', st);
+    if (!p || p.v == null) missing.push(g.id);
+    if (p && p.src === 'live') live++;
+    const v = p && p.v != null ? p.v : 0, cost = g.q * v;
+    gross += cost; if (g.ret) retBase += cost;
+    return { id: g.id, q: g.q, ret: g.ret, p, cost };
+  });
+  const returned = retBase * B.rrr;
+  const buyFee = (gross - returned) * setupBuy;
+  const mat = gross - returned + buyFee;
+  const fee = rec.iv * rec.out * NUTRITION * (Number(st.fee) || 0) / 100;
+  const ps = priceOf(rec.product, 'sell', st);
+  if (!ps || ps.v == null) missing.push(rec.product);
+  if (ps && ps.src === 'live') live++;
+  const sell = ps && ps.v != null ? ps.v : 0;
+  const revGross = rec.out * sell;
+  const tax = revGross * taxRate, setup = revGross * setupSell;
+  const rev = revGross - tax - setup;
+  const cost = mat + fee;
+  const profit = rev - cost;
+  const fc = st.focusCost[rec.product];
+  const focusPer = fc != null && fc !== '' && Number(fc) >= 0 ? Number(fc) : rec.focus;
+  const gain = retBase * (BF.rrr - B0.rrr) * (1 + setupBuy);
+  return { rec, B, lines, gross, returned, buyFee, mat, fee, ps, sell, revGross, tax, setup, rev, cost, profit,
+           margin: cost > 0 ? profit / cost : null, missing, ok: missing.length === 0, focusPer, gain, taxRate, setupSell, setupBuy, live };
+}
+
+/* ---------- onde estou ---------- */
+function hereCity() {
+  const s = STATUS || {}, now = Date.now();
+  if (s.ingestCity && s.lastIngest && now - s.lastIngest < 30 * 60e3 && CITIES.includes(s.ingestCity)) return s.ingestCity;
+  if (s.location && s.locationAt && now - s.locationAt < 6 * 3600e3 && CITIES.includes(s.location)) return s.location;
+  return '';
+}
+
+/* ---------- formulário ---------- */
+function chip(group, v, label, on, opts) {
+  opts = opts || {};
+  return `<button type="button" class="chip" data-chip="${group}" data-v="${esc(v)}" aria-pressed="${on ? 'true' : 'false'}"${opts.disabled ? ' disabled' : ''}${opts.title ? ` title="${esc(opts.title)}"` : ''}>${opts.dot != null ? `<i class="dot e${opts.dot}"></i>` : ''}${label}</button>`;
+}
+function seg(key, options, val, aria) {
+  return `<div class="seg" role="group" aria-label="${esc(aria)}">${options.map(([v, l]) =>
+    `<button type="button" data-seg="${key}" data-v="${esc(String(v))}" aria-pressed="${String(v) === String(val) ? 'true' : 'false'}">${esc(l)}</button>`).join('')}</div>`;
+}
+const cityOptions = sel => CITIES.map(c => `<option value="${esc(c)}"${c === sel ? ' selected' : ''}>${esc(c)}</option>`).join('');
+function locOptions(st, cat) {
+  const word = CAT_WORD[cat];
+  const cities = CITIES.map(c => {
+    const sp = (CITY_SPEC[c] || {})[cat] || 0;
+    return `<option value="${esc(c)}"${st.loc === c ? ' selected' : ''}>${esc(c)}${sp ? ` ★ bônus de ${word} (+${Math.round(sp * 100)}%)` : ''}</option>`;
+  }).join('');
+  const o = (v, l) => `<option value="${v}"${st.loc === v ? ' selected' : ''}>${l}</option>`;
+  return `<optgroup label="Cidades (18% de base)">${cities}</optgroup><optgroup label="Ilhas e outros">${o('island-bonus', `Ilha com bônus de ${word} (+${Math.round((SPEC[cat] || 0) * 100)}%)`)}${o('island', 'Ilha sem bônus (0%)')}${o('manual', 'Outro local (informar o bônus)')}</optgroup>`;
+}
+function recipeLine(rec) {
+  return rec.ing.map(g => `<b>${NF0.format(g.q)}×</b> ${esc(nm(g.id))}`).join(' + ') + ` → <b>${rec.out}×</b> ${esc(nm(rec.product))}`;
+}
+function whatSection() {
+  if (calcTab() === 'ref') {
+    const st = S.ref, fam = DATA.F[st.fam];
+    const rec = refRec(st.fam, st.tier, st.ench);
+    return `<section aria-label="O que refinar">
+      <h2 class="sec">O que refinar</h2>
+      <div class="chips" role="group" aria-label="Recurso">${Object.keys(FAM).map(k => chip('fam', k, `${FAM[k].label} → ${FAM[k].out}`, k === st.fam)).join('')}</div>
+      <div class="chips" role="group" aria-label="Tier">${[2, 3, 4, 5, 6, 7, 8].map(t => chip('tier', t, `T${t} <small>${TIER_NAME[t]}</small>`, t === st.tier)).join('')}</div>
+      <div class="chips" role="group" aria-label="Encantamento">${[0, 1, 2, 3, 4].map(e => chip('ench', e, `.${e} ${ENCH[e]}`, e === st.ench,
+        { dot: e, disabled: !fam.r[st.tier + '.' + e], title: !fam.r[st.tier + '.' + e] ? 'Não existe no jogo para este tier' : '' })).join('')}</div>
+      ${rec ? `<p class="recipe">${recipeLine(rec)}</p>` : ''}
+    </section>`;
+  }
+  const st = S.pot, p = POTS[st.id], rec = potRec(st.id, st.ench);
+  const groups = POT_TYPES.filter(([t]) => POT_BY_TYPE[t]).map(([t, label]) =>
+    `<optgroup label="${esc(label)}">${POT_BY_TYPE[t].map(id => `<option value="${id}"${id === st.id ? ' selected' : ''}>T${POTS[id].tier} · ${esc(nm(id))}</option>`).join('')}</optgroup>`).join('');
+  return `<section aria-label="O que produzir">
+    <h2 class="sec">Qual poção</h2>
+    <label class="fld"><span class="lbl">Poção</span><select id="f-potion" data-k="potion">${groups}</select></label>
+    <div class="chips" role="group" aria-label="Encantamento">${[0, 1, 2, 3].map(e => chip('pench', e, `.${e} ${ENCH[e]}`, e === st.ench,
+      { dot: e, disabled: !p.lv[String(e)] })).join('')}</div>
+    ${rec ? `<p class="recipe">${recipeLine(rec)}</p>` : ''}
+  </section>`;
+}
+function howSection() {
+  const st = cur(), cat = catOf(), rec = curRec();
+  const isRef = calcTab() === 'ref';
+  return `<section aria-label="Onde e como">
+    <h2 class="sec">Onde e como</h2>
+    <div class="row">
+      <label class="fld"><span class="lbl">Local do ${isRef ? 'refino' : 'craft'}</span><select id="f-loc" data-k="loc">${locOptions(st, cat)}</select></label>
+      <label class="fld" id="manual-wrap"${st.loc === 'manual' ? '' : ' hidden'}><span class="lbl">Bônus do local, sem foco (%)</span>
+        <input id="f-manual" data-k="manualBonus" inputmode="decimal" autocomplete="off" value="${esc(fmtIn(Number(st.manualBonus) || 0))}">
+        <span class="hint">A janela de criação mostra o “bônus de produção local”.</span></label>
+      <label class="fld"><span class="lbl">Quantidade de ${isRef ? 'refinos' : 'crafts'}</span>
+        <input id="f-qty" data-k="qty" inputmode="numeric" autocomplete="off" value="${esc(NF0.format(Number(st.qty) || 0))}">
+        <span class="hint" id="qty-hint"></span></label>
+    </div>
+    <div class="row">
+      <div class="fld"><span class="lbl">Foco</span>${seg('focus', [[true, 'Usar foco'], [false, 'Sem foco']], st.focus, 'Foco')}</div>
+      <div class="fld"><span class="lbl">Bônus diário</span>${seg('daily', [[0, 'Nenhum'], [10, '+10%'], [20, '+20%']], st.daily, 'Bônus diário')}</div>
+    </div>
+    <div class="row">
+      <label class="fld"><span class="lbl">Taxa da estação</span>
+        <input id="f-fee" data-k="fee" inputmode="decimal" autocomplete="off" value="${esc(fmtIn(Number(st.fee) || 0))}">
+        <span class="hint" id="fee-hint"></span></label>
+      <label class="fld"><span class="lbl">Foco por ${isRef ? 'refino' : 'craft'}</span>
+        <input id="f-focus" data-k="focusCost" inputmode="numeric" autocomplete="off" placeholder="${rec ? NF0.format(rec.focus) : ''}" value="${rec && st.focusCost[rec.product] != null ? esc(fmtIn(st.focusCost[rec.product])) : ''}">
+        <span class="hint">${rec ? `Base ${NF0.format(rec.focus)} sem especialização. Digite o valor que o jogo mostra para você.` : ''}</span></label>
+    </div>
+    <p class="rrr-line" id="rrr-line"></p>
+  </section>`;
+}
+function marketSection() {
+  const st = cur();
+  return `<section aria-label="Mercado">
+    <h2 class="sec">Mercado</h2>
+    <div class="here" id="here" hidden></div>
+    <div class="row">
+      <label class="fld"><span class="lbl">Comprar materiais em</span><select id="f-buycity" data-k="buyCity">${cityOptions(st.buyCity)}</select></label>
+      <label class="fld"><span class="lbl">Vender em</span><select id="f-sellcity" data-k="sellCity">${cityOptions(st.sellCity)}</select></label>
+    </div>
+    <div class="row">
+      <div class="fld"><span class="lbl">Como comprar</span>${seg('buyMode', [['instant', 'Na hora'], ['order', 'Ordem de compra']], st.buyMode, 'Como comprar')}</div>
+      <div class="fld"><span class="lbl">Como vender</span>${seg('sellMode', [['order', 'Ordem de venda'], ['instant', 'Na hora']], st.sellMode, 'Como vender')}</div>
+    </div>
+    <div class="todo" id="todo" hidden></div>
+    <div class="fetch">
+      <button type="button" class="btn ghost" id="btn-fetch">Buscar na API · ${esc(SERVERS[S.server])}</button>
+      <span class="status" id="fetch-status">${calcTab() === 'ref' ? 'Completa com a API todos os tiers deste recurso.' : 'Completa com a API todas as versões desta poção.'}</span>
+    </div>
+  </section>`;
+}
+function priceSection() {
+  return `<section aria-label="Preços">
+    <div class="sec-row"><h2 class="sec">Preços em prata</h2><button type="button" class="linkbtn" id="btn-clear-man">Apagar preços digitados</button></div>
+    <div class="prices" id="prices">${priceRows()}</div>
+  </section>`;
+}
+function priceRows() {
+  const rec = curRec(), st = cur();
+  if (!rec) return '<p class="muted">Essa combinação não existe no jogo.</p>';
+  const modeBuy = st.buyMode === 'instant' ? 'menor ordem de venda' : 'maior ordem de compra';
+  const modeSell = st.sellMode === 'order' ? 'menor ordem de venda' : 'maior ordem de compra';
+  return `<p class="src-note">Materiais: ${esc(st.buyCity)}, ${modeBuy}. Produto: ${esc(st.sellCity)}, ${modeSell}. Para fixar um preço, digite (aceita 1.250, 1,2k ou 1,5kk).</p>
+    <div class="phead" aria-hidden="true"><span>Material</span><span>Qtd.</span><span>Preço unitário</span><span>Subtotal</span></div>
+    ${rec.ing.map(g => priceRow(g.id, 'buy', g.q, st)).join('')}
+    <div class="psep">Você vende</div>
+    ${priceRow(rec.product, 'sell', rec.out, st)}`;
+}
+function badgeHtml(p, id, role, st) {
+  if (!p) return `<span class="b none">sem preço · pesquise no mercado</span>`;
+  if (p.src === 'live') {
+    const old = Date.now() - p.at > FRESH_MS;
+    return `<span class="b live${old ? ' old' : ''}" title="${esc(new Date(p.at).toLocaleString('pt-BR'))}">ao vivo · ${agoShort(p.at)}${p.a ? ' · ' + NF0.format(p.a) + ' un.' : ''}</span>`;
+  }
+  if (p.src === 'api') {
+    const old = Date.now() - p.at > FRESH_MS;
+    return `<span class="b api${old ? ' old' : ''}" title="${esc(new Date(p.at).toLocaleString('pt-BR'))}">API · ${ago(p.at)}</span>`;
+  }
+  const fb = bookFallback(id, role, st);
+  return `<span class="b man">digitado</span>${fb ? `<button type="button" class="linkbtn" data-clear="${esc(p.key)}">usar ${fb}</button>` : ''}`;
+}
+function priceRow(id, role, q, st) {
+  const p = priceOf(id, role, st);
+  const city = role === 'buy' ? st.buyCity : st.sellCity;
+  const key = id + '|' + ck(city) + '|' + role;
+  const e = enchOf(id), tag = tierTag(id);
+  const val = p && p.v != null ? fmtIn(p.v) : '';
+  const domId = 'p_' + key.replace(/[^A-Za-z0-9]/g, '_');
+  return `<div class="prow" data-row="${esc(key)}" data-book="${esc(id + '|' + city)}">
+    <div class="pname"><i class="dot e${e}"></i><span class="pn">${esc(nm(id))}</span>${tag ? `<span class="tag">${tag}</span>` : ''}</div>
+    <div class="pqty">${NF0.format(q)}×</div>
+    <div class="pin"><input id="${domId}" data-price="${esc(key)}" data-id="${esc(id)}" data-role="${role}" inputmode="decimal" autocomplete="off" value="${esc(val)}" placeholder="preço" aria-label="Preço de ${esc(nm(id))}">
+      <div class="badges" data-badge="${esc(key)}">${badgeHtml(p, id, role, st)}</div></div>
+    <div class="psub" data-sub="${esc(key)}">${p && p.v != null ? money(q * p.v) : '—'}</div>
+  </div>`;
+}
+function rowEl(key) { return document.querySelector(`[data-row="${CSS.escape(key)}"]`); }
+function updateRow(key, reformat, flash) {
+  const el = rowEl(key); if (!el) return;
+  const input = el.querySelector('input');
+  const id = input.dataset.id, role = input.dataset.role, st = cur();
+  const rec = curRec(); if (!rec) return;
+  const q = role === 'sell' ? rec.out : (rec.ing.find(g => g.id === id) || { q: 0 }).q;
+  const p = priceOf(id, role, st);
+  el.querySelector('[data-badge]').innerHTML = badgeHtml(p, id, role, st);
+  el.querySelector('[data-sub]').textContent = p && p.v != null ? money(q * p.v) : '—';
+  if (reformat && document.activeElement !== input) input.value = p && p.v != null ? fmtIn(p.v) : '';
+  if (flash) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+}
+
+function renderForm() {
+  $('#form').innerHTML = whatSection() + howSection() + marketSection() + priceSection();
+  $('#form').setAttribute('aria-labelledby', calcTab() === 'ref' ? 'tab-ref' : 'tab-pot');
+}
+function renderPrices() { const el = $('#prices'); if (el) el.innerHTML = priceRows(); }
+function renderTabs() {
+  for (const b of document.querySelectorAll('.tab[data-tab]')) b.setAttribute('aria-selected', b.dataset.tab === S.tab ? 'true' : 'false');
+  $('#g-server').value = S.server;
+  for (const b of document.querySelectorAll('#g-premium button')) b.setAttribute('aria-pressed', (b.dataset.v === '1') === S.premium ? 'true' : 'false');
+  $('#calc').hidden = S.tab === 'cap';
+  $('#cap').hidden = S.tab !== 'cap';
+  $('#dock').hidden = S.tab === 'cap';
+  $('#notes').hidden = S.tab === 'cap';
+}
+
+/* ---------- dicas de mercado ---------- */
+function updateMarketHints() {
+  const st = cur(), rec = curRec();
+  const hereEl = $('#here'), todoEl = $('#todo');
+  if (!hereEl || !todoEl) return;
+  const here = hereCity();
+  if (here && (st.buyCity !== here || st.sellCity !== here)) {
+    hereEl.innerHTML = `<span>Você está em <b>${esc(here)}</b>. A conta usa ${esc(st.buyCity === st.sellCity ? st.buyCity : st.buyCity + ' e ' + st.sellCity)}.</span><button type="button" class="linkbtn" data-here="${esc(here)}">Comprar e vender em ${esc(here)}</button>`;
+    hereEl.hidden = false;
+  } else hereEl.hidden = true;
+  if (!rec) { todoEl.hidden = true; return; }
+  const need = [];
+  for (const g of rec.ing) { const p = priceOf(g.id, 'buy', st); if (!isFresh(p)) need.push({ id: g.id, city: st.buyCity, p }); }
+  const pp = priceOf(rec.product, 'sell', st);
+  if (!isFresh(pp)) need.push({ id: rec.product, city: st.sellCity, p: pp });
+  if (!need.length) { todoEl.hidden = true; return; }
+  const byCity = {};
+  for (const n of need) (byCity[n.city] = byCity[n.city] || []).push(n);
+  todoEl.innerHTML = Object.keys(byCity).map(city => `<p><b>Pesquise no mercado de ${esc(city)}</b> <span class="muted">(clique para copiar o nome e colar na busca do jogo)</span></p>
+    <div class="chips">${byCity[city].map(n => `<button type="button" class="chip" data-copy="${esc(nm(n.id))}">${esc(nm(n.id))} <span class="city">${tierTag(n.id)}${n.p ? ' · ' + (n.p.src === 'api' ? 'API ' : '') + ago(n.p.at) : ' · sem preço'}</span></button>`).join('')}</div>`).join('');
+  todoEl.hidden = false;
+}
+
+/* ---------- resultado ---------- */
+function bonusText(B) {
+  const parts = [];
+  if (B.base) parts.push(`${NF0.format(B.base * 100)} do local`);
+  if (B.spec) parts.push(`${NF0.format(B.spec * 100)} de especialização`);
+  if (B.focus) parts.push(`${NF0.format(B.focus * 100)} do foco`);
+  if (B.daily) parts.push(`${NF0.format(B.daily * 100)} do bônus diário`);
+  return `bônus de produção ${NF0.format(B.total * 100)}%${parts.length ? ' (' + parts.join(' + ') + ')' : ''}`;
+}
+function renderLedger() {
+  const rec = curRec(), st = cur(), el = $('#ledger');
+  if (!rec) { el.innerHTML = '<div class="card"><p class="muted">Essa combinação não existe no jogo.</p></div>'; return null; }
+  const r = compute(rec, st, catOf());
+  const unit = unitOf(), out = rec.out;
+  const qty = Math.max(0, Math.floor(Number(st.qty) || 0));
+  const isRef = calcTab() === 'ref';
+  const cls = r.profit > 0.0499 ? 'pos' : r.profit < -0.0499 ? 'neg' : '';
+  const perCraft = out > 1 ? ` (1 craft = ${out} poções)` : '';
+  const total = rec.ing.length + 1;
+  const hero = r.ok
+    ? `<div class="hero ${cls}"><span class="eyebrow">Lucro por ${unit}</span><span class="hero-num">${signed(r.profit / out)}<small>prata</small></span></div>
+       <div class="meta">${r.margin != null ? `<span class="pill ${cls}">Margem ${pct(r.margin)}</span>` : ''}<span>${NF0.format(qty)} ${isRef ? 'refinos' : 'crafts'}: <b class="val ${cls}">${signed(r.profit * qty)}</b> <span class="muted">(${kk(r.profit * qty)})</span></span><span class="muted">${r.live}/${total} preços ao vivo</span></div>`
+    : `<div class="missing"><b>Faltam preços para fechar a conta:</b><ul>${r.missing.map(id => `<li>${esc(nm(id))} ${tierTag(id)}</li>`).join('')}</ul></div>`;
+  const row = (label, v, cl, sub) => `<tr class="${cl || ''}"><td>${label}${sub ? `<br><span class="sub">${sub}</span>` : ''}</td><td>${v}</td></tr>`;
+  const bk = `<table class="bk"><caption>Conta de um ${isRef ? 'refino' : 'craft'}${perCraft}</caption><tbody>
+    ${row('Materiais a preço cheio', money(r.gross))}
+    ${row(`Retorno de recursos (${pct(r.B.rrr)})`, neg(r.returned))}
+    ${r.setupBuy ? row('Taxa da ordem de compra (2,5%)', '+' + money(r.buyFee)) : ''}
+    ${row('Taxa da estação', '+' + money(r.fee), '', `valor do item ${NF0.format(rec.iv)} × ${out} × 0,1125 × ${fmtIn(Number(st.fee) || 0)}/100`)}
+    ${row('Custo real', money(r.cost), 'sum')}
+    ${row(`Venda (${out} × ${r.ps && r.ps.v != null ? money(r.sell) : '—'})`, money(r.revGross))}
+    ${row(`Imposto (${pct(r.taxRate).replace(',0', '')})`, neg(r.tax))}
+    ${r.setupSell ? row('Taxa de anúncio (2,5%)', neg(r.setup)) : ''}
+    ${row('Receita líquida', money(r.rev), 'sum')}
+    ${r.ok ? row('Lucro', signed(r.profit), 'total') : ''}
+  </tbody></table>`;
+  const buyList = rec.ing.map(g => {
+    const need = Math.ceil(qty * g.q * (1 - (g.ret ? r.B.rrr : 0)) - 1e-9);
+    const p = priceOf(g.id, 'buy', st);
+    const thin = p && p.src === 'live' && st.buyMode === 'instant' && p.a > 0 && need > p.a;
+    return `<li${thin ? ' class="warnline"' : ''}><span>${NF0.format(need)}× ${esc(nm(g.id))}</span><span>${p && p.v != null ? '≈ ' + money(need * p.v * (1 + r.setupBuy)) : ''}${thin ? ` · só ${NF0.format(p.a)} un. nesse preço` : ''}</span></li>`;
+  }).join('');
+  const buy = `<div class="block"><h3>Para ${NF0.format(qty)} ${isRef ? 'refinos' : 'crafts'}, compre</h3><ul>${buyList}
+    <li><span>Taxa da estação no total</span><span>≈ ${money(r.fee * qty)}</span></li>
+    <li><span>Você recebe ${NF0.format(qty * out)}× ${esc(nm(rec.product))}</span><span>${r.ok ? 'líquido ≈ ' + money(r.rev * qty) : ''}</span></li></ul></div>`;
+  const fp = r.focusPer > 0 ? r.gain / r.focusPer : 0;
+  const focus = `<div class="block"><h3>Foco</h3>${st.focus
+    ? `<p>${NF0.format(r.focusPer * qty)} de foco no total (${NF0.format(r.focusPer)} por ${isRef ? 'refino' : 'craft'}). ${r.focusPer > 0 ? `Os 10.000 de foco de um dia de premium dão para ${NF0.format(Math.floor(FOCUS_PER_DAY / r.focusPer))} ${isRef ? 'refinos' : 'crafts'}.` : ''}</p>
+       <p>O foco está rendendo <b>${signed(r.gain / out)}</b> por ${unit}${r.focusPer > 0 ? `, ou <b>${NF2.format(fp)}</b> prata por ponto de foco` : ''}.</p>`
+    : `<p>Sem foco. Com foco o retorno iria para ${pct(bonusParts(st, catOf(), true).rrr)} e o lucro subiria <b>${signed(r.gain / out)}</b> por ${unit}${r.focusPer > 0 ? ` (${NF2.format(fp)} prata por ponto de foco)` : ''}.</p>`}</div>`;
+  el.innerHTML = `<div class="card">
+    <p class="eyebrow">${esc(nm(rec.product))} · ${tierTag(rec.product)} ${esc(TIER_NAME[tierOf(rec.product)] || '')}</p>
+    ${hero}
+    <p class="rrr-line"><b>${pct(r.B.rrr)}</b> de retorno de recursos · ${bonusText(r.B)}</p>
+    ${bk}${buy}${focus}</div>`;
+  return r;
+}
+function renderCompare() {
+  const st = cur(), cat = catOf(), unit = unitOf();
+  let rows, cols, title, recFor, isSel, rowLabel;
+  if (calcTab() === 'ref') {
+    const fam = S.ref.fam;
+    rows = [2, 3, 4, 5, 6, 7, 8]; cols = [0, 1, 2, 3, 4];
+    title = `Todos os tiers de ${FAM[fam].label} → ${FAM[fam].out}`;
+    recFor = (t, e) => refRec(fam, t, e);
+    isSel = (t, e) => t === S.ref.tier && e === S.ref.ench;
+    rowLabel = t => `T${t}<small>${TIER_NAME[t]}</small>`;
+  } else {
+    const type = POTS[S.pot.id].type;
+    rows = POT_BY_TYPE[type]; cols = [0, 1, 2, 3];
+    title = `Todas as versões: ${typeLabel(type)}`;
+    recFor = (id, e) => potRec(id, e);
+    isSel = (id, e) => id === S.pot.id && e === S.pot.ench;
+    rowLabel = id => `${esc(nm(id))}<small>T${POTS[id].tier}</small>`;
+  }
+  let filled = 0, total = 0;
+  const body = rows.map(rk => `<tr><th scope="row">${rowLabel(rk)}</th>${cols.map(e => {
+    const rec = recFor(rk, e);
+    if (!rec) return '<td></td>';
+    total++;
+    const r = compute(rec, st, cat), sel = isSel(rk, e) ? ' sel' : '';
+    if (!r.ok) return `<td><button type="button" class="cell miss${sel}" data-pick="${esc(rk + '|' + e)}" title="Faltam preços">—<small>sem preço</small></button></td>`;
+    filled++;
+    const per = r.profit / rec.out, c = per > 0.0499 ? 'pos' : per < -0.0499 ? 'neg' : '';
+    const allLive = r.live === rec.ing.length + 1;
+    return `<td><button type="button" class="cell ${c}${sel}" data-pick="${esc(rk + '|' + e)}"${allLive ? ' title="Todos os preços ao vivo"' : ''}><b>${signed(per)}${allLive ? '<i class="lv"></i>' : ''}</b><small>${r.margin != null ? 'margem ' + pct(r.margin) : ''}</small></button></td>`;
+  }).join('')}</tr>`).join('');
+  $('#compare').innerHTML = `<div class="sec-row"><h2 class="sec">${esc(title)}</h2></div>
+    <p class="muted">Lucro por ${unit} com o mesmo local, foco, taxas e cidades. Clique numa célula para abrir a conta. O ponto verde marca contas feitas só com preços ao vivo.${filled < total ? ' Use Buscar na API para preencher o resto da tabela.' : ''}</p>
+    <div class="tablewrap"><table class="cmp"><thead><tr><th scope="col">${calcTab() === 'ref' ? 'Tier' : 'Poção'}</th>${cols.map(e => `<th scope="col"><i class="dot e${e}"></i>.${e} ${ENCH[e]}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+function renderDock(r) {
+  const el = $('#dock'), rec = curRec(), st = cur();
+  if (!rec) { el.innerHTML = ''; return; }
+  const qty = Math.max(0, Math.floor(Number(st.qty) || 0));
+  if (!r || !r.ok) { el.innerHTML = `<div><span class="d-lbl">Resultado</span><b>Faltam preços</b></div><button type="button" id="dock-go">Ver conta</button>`; return; }
+  const c = r.profit > 0.0499 ? 'pos' : r.profit < -0.0499 ? 'neg' : '';
+  el.innerHTML = `<div><span class="d-lbl">Por ${unitOf()}</span><b class="${c}">${signed(r.profit / rec.out)}</b></div>
+    <div><span class="d-lbl">${NF0.format(qty)} ${calcTab() === 'ref' ? 'refinos' : 'crafts'}</span><b class="${c}">${kk(r.profit * qty)}</b></div>
+    <div><span class="d-lbl">Retorno</span><b>${pct(r.B.rrr)}</b></div>
+    <button type="button" id="dock-go">Ver conta</button>`;
+}
+function update() {
+  if (S.tab === 'cap') return;
+  const rec = curRec(), st = cur();
+  const rl = $('#rrr-line');
+  if (rl) { const B = bonusParts(st, catOf(), st.focus); rl.innerHTML = `Retorno de recursos: <b>${pct(B.rrr)}</b> · ${bonusText(B)}`; }
+  const fh = $('#fee-hint');
+  if (fh && rec) fh.textContent = `Prata por 100 de nutrição. Aqui dá ≈ ${money(rec.iv * NUTRITION * (Number(st.fee) || 0) / 100)} por ${unitOf()}.`;
+  const qh = $('#qty-hint');
+  if (qh && rec) qh.textContent = rec.out > 1 ? `= ${NF0.format(Math.max(0, Math.floor(Number(st.qty) || 0)) * rec.out)} poções` : '';
+  const r = renderLedger();
+  renderCompare();
+  renderDock(r);
+  updateMarketHints();
+}
+
+/* ---------- captura ---------- */
+function capState() {
+  const s = STATUS || {}, now = Date.now();
+  const recent = s.lastIngest && now - s.lastIngest < 10 * 60e3;
+  if (recent) return { kind: 'live', label: 'Ao vivo', detail: `${s.ingestCity ? s.ingestCity + ' · ' : ''}${agoShort(s.lastIngest)}` };
+  if (!s.installed) return { kind: 'bad', label: 'Data Client não encontrado', detail: '' };
+  if (!s.running) return { kind: 'warn', label: 'Data Client fechado', detail: '' };
+  if (!s.linked) return { kind: 'warn', label: 'Data Client sem ligação com o app', detail: '' };
+  return { kind: 'wait', label: 'Pronto', detail: 'abra o mercado no jogo' };
+}
+function renderPill() {
+  const c = capState(), el = $('#cap-pill');
+  el.className = 'cap-pill ' + c.kind;
+  $('#cap-pill-text').innerHTML = `${esc(c.label)}${c.detail ? ` <small>${esc(c.detail)}</small>` : ''}`;
+  const cnt = $('#tab-cap-count');
+  if (STATUS.ingestOrders) { cnt.textContent = NF0.format(STATUS.ingestOrders); cnt.hidden = false; } else cnt.hidden = true;
+}
+function check(kind, title, detail) {
+  const ic = { ok: '✓', warn: '!', bad: '×', wait: '…' }[kind] || '·';
+  return `<li class="${kind}"><span class="ic" aria-hidden="true">${ic}</span><div><b>${title}</b>${detail ? `<span>${detail}</span>` : ''}</div></li>`;
+}
+function renderCapture() {
+  const s = STATUS || {}, now = Date.now();
+  const busy = !!s.busy;
+  const items = [];
+  if (s.installed) items.push(check('ok', 'Albion Data Client instalado', `${esc(s.exe)}${s.version ? ' · versão ' + esc(s.version) : ''}`));
+  else items.push(check('bad', 'Albion Data Client não encontrado', 'Instale pelo site <a href="https://www.albion-online-data.com/client" target="_blank" rel="noopener">albion-online-data.com</a> e abra este app de novo.'));
+  if (s.platform === 'windows') {
+    if (s.npcap === 'ok') items.push(check('ok', 'Npcap instalado', 'O driver que deixa o Data Client ler o tráfego do jogo.'));
+    else if (s.npcap === 'adminonly') items.push(check('warn', 'Npcap restrito a administradores', 'O Data Client precisa rodar como administrador. A ligação pelo início automático já faz isso.'));
+    else if (s.npcap === 'winpcap') items.push(check('bad', 'Só o WinPcap antigo está instalado', 'Instale o <a href="https://npcap.com/#download" target="_blank" rel="noopener">Npcap</a>.'));
+    else items.push(check('bad', 'Npcap não instalado', 'Sem ele o Data Client não captura nada. Instale o <a href="https://npcap.com/#download" target="_blank" rel="noopener">Npcap</a>.'));
+  }
+  if (s.running) items.push(check('ok', 'Data Client rodando', `${s.managed ? 'Aberto por este app.' : 'Aberto pelo Windows ou por você.'}`));
+  else items.push(check('warn', 'Data Client fechado', s.autoStart ? 'O app tenta abrir ele sozinho. Se não abrir, use o botão abaixo.' : 'Use o botão abaixo para abrir.'));
+  if (s.lastIngest) items.push(check('ok', 'Mandando preços para o app', `Última ordem ${agoShort(s.lastIngest)}${s.ingestCity ? ' em ' + esc(s.ingestCity) : ''} · ${NF0.format(s.ingestOrders || 0)} ordens recebidas nesta sessão.`));
+  else if (s.linked) items.push(check('wait', 'Ligado ao app, esperando o mercado', 'Abra o mercado no jogo e pesquise um item.'));
+  else if (s.publicSends) items.push(check('bad', 'O Data Client está capturando, mas não manda para o app', 'Ele já enviou preços para o site do AODP nesta sessão. Clique em "Ligar ao app".'));
+  else items.push(check('warn', 'Ainda não ligado ao app', 'Clique em "Ligar ao app" abaixo.'));
+  if (s.needZone) items.push(check('warn', 'O Data Client não sabe onde você está', 'Troque de mapa uma vez no jogo (saia e entre na cidade) para ele identificar o local.'));
+  else if (s.location) items.push(check('ok', `Você está em ${esc(s.location)}`, s.character ? `Personagem ${esc(s.character)}` : ''));
+  if (s.encrypted && now - s.encrypted < 30 * 60e3) items.push(check('bad', 'Dados do mercado criptografados', 'O jogo mandou o mercado criptografado e o Data Client não consegue ler. Veja <a href="https://www.albion-online-data.com/client-faq#encryption" target="_blank" rel="noopener">o FAQ do Data Client</a>.'));
+  if (s.captureErr) items.push(check('bad', 'Aviso do Data Client', esc(s.captureErr)));
+  if (s.serverHint && s.serverHint !== S.server) items.push(check('warn', `O Data Client está no servidor ${esc(SERVERS[s.serverHint] || s.serverHint)}`, `O app está mostrando ${esc(SERVERS[S.server])}. <button type="button" class="linkbtn" data-server="${esc(s.serverHint)}">Mudar para ${esc(SERVERS[s.serverHint] || s.serverHint)}</button>`));
+
+  const acts = [];
+  if (s.installed && !s.linked) acts.push(`<button type="button" class="btn" data-action="link"${busy ? ' disabled' : ''}>Ligar ao app</button>`);
+  if (s.installed && !s.running) acts.push(`<button type="button" class="btn${!s.linked ? ' ghost' : ''}" data-action="start"${busy ? ' disabled' : ''}>Abrir Data Client</button>`);
+  if (s.installed && s.running) acts.push(`<button type="button" class="btn ghost" data-action="restart"${busy ? ' disabled' : ''}>Reiniciar Data Client</button>`);
+  if (s.installed && s.linked && !s.managed && (s.taskExists || s.linkedAt)) acts.push(`<button type="button" class="btn ghost" data-action="unlink"${busy ? ' disabled' : ''}>Desligar do app</button>`);
+
+  const msg = busy ? `<p class="msg">${esc(s.busy)}</p>` : (s.message && now - s.messageAt < 30 * 60e3 ? `<p class="msg ${esc(s.messageKind || '')}">${esc(s.message)}</p>` : '');
+
+  const feed = FEED.length ? `<ul class="feed">${FEED.map(f => `<li>
+      <div class="fh"><b>${esc(f.c || ('local ' + (f.loc || '?')))}</b><span class="muted">${clock(f.t)} · ${f.s === 'r' ? 'ordens de compra' : 'ordens de venda'} · ${NF0.format(f.n)}</span></div>
+      <div class="fi">${(f.i || []).map(l => `<span>${esc(nm(l.id))} <i>${tierTag(l.id)}</i> <b>${money(l.p)}</b> <i>(${NF0.format(l.a)})</i></span>`).join('')}</div>
+    </li>`).join('')}</ul>` : '<p class="empty">Nenhuma captura ainda. Abra o mercado no jogo e pesquise um item.</p>';
+
+  $('#cap').innerHTML = `<div class="capgrid">
+    <div class="card">
+      <h2 class="sec">Ligação com o Data Client</h2>
+      <ul class="checks">${items.join('')}</ul>
+      ${acts.length ? `<div class="actions">${acts.join('')}</div>` : ''}
+      ${msg}
+      ${!s.linked && s.installed ? `<p class="muted" style="margin:0">"Ligar ao app" ajusta o início automático do Data Client oficial (o mesmo que o instalador dele cria) para mandar uma cópia dos preços para este app, e reinicia ele. O Windows pede permissão de administrador uma vez. O Data Client continua enviando para o site do AODP normalmente.</p>` : ''}
+      <label class="toggle"><input type="checkbox" id="opt-autostart"${s.autoStart ? ' checked' : ''}><span>Abrir o Data Client junto com o app quando ele estiver fechado</span></label>
+      <div class="actions"><button type="button" class="linkbtn" data-action="refresh">Verificar de novo</button><button type="button" class="linkbtn" data-action="openlog">Abrir log do Data Client</button><button type="button" class="linkbtn" data-action="opendata">Abrir pasta do app</button></div>
+      <details class="manual"><summary>Fazer a ligação manualmente</summary>
+        <p>Abra o Prompt de Comando como administrador, rode o comando abaixo e reinicie o PC (ou o Data Client):</p>
+        <div class="code"><code id="manual-cmd">${esc(s.manualCmd || '')}</code><button type="button" class="btn ghost" data-copy-el="manual-cmd">Copiar</button></div>
+        <p class="muted">O app recebe os preços em ${esc(s.ingestURL || '')}.</p>
+      </details>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+      <div class="card">
+        <h2 class="sec">Como usar</h2>
+        <ol class="steps">
+          <li>Deixe este app aberto enquanto joga.</li>
+          <li>No jogo, abra o mercado de uma cidade e pesquise os itens da receita (troncos, tábuas, ervas, a própria poção…).</li>
+          <li>Os preços entram na hora na calculadora, marcados como <b>ao vivo</b>. A aba Refino ou Poções mostra o que ainda falta pesquisar.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <div class="sec-row"><h2 class="sec">Últimas capturas</h2><span class="muted">${NF0.format(s.ingestOrders || 0)} ordens nesta sessão</span></div>
+        ${feed}
+      </div>
+      <div class="card">
+        <div class="sec-row"><h2 class="sec">Log do Data Client</h2><span class="muted" style="overflow-wrap:anywhere">${esc(s.logPath || 'arquivo não encontrado')}</span></div>
+        ${LOG.length ? `<pre class="logbox" id="logbox">${esc(LOG.slice(-80).join('\n'))}</pre>` : '<p class="empty">Ainda não achei o log do Data Client. Ele aparece aqui quando o Data Client estiver rodando.</p>'}
+      </div>
+    </div>
+  </div>`;
+  const lb = $('#logbox'); if (lb) lb.scrollTop = lb.scrollHeight;
+}
+
+/* ---------- API do AODP ---------- */
+function fetchIds() {
+  const set = new Set();
+  if (calcTab() === 'ref') {
+    for (const r of Object.values(DATA.F[S.ref.fam].r)) { set.add(r[0]); r[3].forEach(([id]) => set.add(id)); }
+  } else {
+    for (const pid of POT_BY_TYPE[POTS[S.pot.id].type]) for (const l of Object.values(POTS[pid].lv)) { set.add(l[0]); l[4].forEach(([id]) => set.add(id)); }
+  }
+  return [...set];
+}
+function setFetchStatus(text, kind) { const el = $('#fetch-status'); if (el) { el.textContent = text; el.className = 'status' + (kind ? ' ' + kind : ''); } }
+let fetching = false;
+async function doFetch(quiet) {
+  if (fetching) return;
+  fetching = true;
+  const st = cur(), btn = $('#btn-fetch');
+  if (btn) btn.setAttribute('aria-busy', 'true');
+  setFetchStatus('Buscando na API…');
+  try {
+    const res = await api('POST', '/api/aodp', { server: S.server, ids: fetchIds(), cities: [...new Set([st.buyCity, st.sellCity])] });
+    if (res.err) setFetchStatus('A API falhou: ' + res.err, 'warn');
+    else setFetchStatus(res.n ? `${NF0.format(res.n)} preços da API conferidos (${SERVERS[S.server]}). Preços ao vivo mais novos continuam valendo.` : 'A API não tem ofertas desses itens nessas cidades.', res.n ? 'ok' : 'warn');
+  } catch (e) {
+    if (!quiet) setFetchStatus('Não consegui falar com o app.', 'err');
+  } finally {
+    fetching = false;
+    const b = $('#btn-fetch'); if (b) b.removeAttribute('aria-busy');
+  }
+}
+const autoMemo = {};
+function autoFetchIfNeeded() {
+  if (S.tab === 'cap') return;
+  const st = cur(), rec = curRec(); if (!rec) return;
+  const scope = calcTab() === 'ref' ? 'ref:' + S.ref.fam : 'pot:' + POTS[S.pot.id].type;
+  const k = S.server + '|' + scope + '|' + st.buyCity + '|' + st.sellCity;
+  if (autoMemo[k] && Date.now() - autoMemo[k] < 10 * 60e3) return;
+  const needs = rec.ing.map(g => priceOf(g.id, 'buy', st)).concat([priceOf(rec.product, 'sell', st)]);
+  if (needs.every(isFresh)) return;
+  autoMemo[k] = Date.now();
+  doFetch(true);
+}
+
+/* ---------- toast ---------- */
+let toastTimer = 0;
+function toast(text) {
+  const el = $('#toast');
+  el.textContent = text; el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, 2200);
+}
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); toast('Copiado: ' + text); }
+  catch (e) { toast('Não consegui copiar. Selecione o texto e use Ctrl+C.'); }
+}
+
+function renderAll() {
+  renderTabs();
+  renderPill();
+  if (S.tab === 'cap') { renderCapture(); return; }
+  renderForm();
+  update();
+  autoFetchIfNeeded();
+}
+
+/* ---------- eventos da tela ---------- */
+function refocus(selector) { const el = selector && document.querySelector(selector); if (el) el.focus(); }
+function onChip(group, v) {
+  const sel = `[data-chip="${group}"][data-v="${CSS.escape(v)}"]`;
+  if (group === 'fam') {
+    const prev = FAM[S.ref.fam].city, next = FAM[v].city;
+    S.ref.fam = v;
+    for (const k of ['loc', 'buyCity', 'sellCity']) if (S.ref[k] === prev) S.ref[k] = next;
+    if (!refRec(v, S.ref.tier, S.ref.ench)) S.ref.ench = 0;
+  } else if (group === 'tier') {
+    S.ref.tier = Number(v);
+    if (!refRec(S.ref.fam, S.ref.tier, S.ref.ench)) S.ref.ench = 0;
+  } else if (group === 'ench') {
+    S.ref.ench = Number(v);
+  } else if (group === 'pench') {
+    S.pot.ench = Number(v);
+  }
+  renderForm(); update(); save(); refocus(sel); autoFetchIfNeeded();
+}
+function onSeg(btn, key, v) {
+  for (const b of btn.parentElement.querySelectorAll('button')) b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+  if (key === 'premium') { S.premium = v === '1'; update(); save(); return; }
+  const st = cur();
+  if (key === 'focus') st.focus = v === 'true';
+  else if (key === 'daily') st.daily = Number(v);
+  else st[key] = v;
+  if (key === 'buyMode' || key === 'sellMode') renderPrices();
+  update(); save();
+}
+function onPick(v) {
+  const [a, b] = v.split('|');
+  if (calcTab() === 'ref') { S.ref.tier = Number(a); S.ref.ench = Number(b); }
+  else { S.pot.id = a; S.pot.ench = Number(b); }
+  renderForm(); update(); save();
+  refocus(`[data-pick="${CSS.escape(v)}"]`);
+}
+function onField(t) {
+  const st = cur(), k = t.dataset.k, rec = curRec();
+  if (k === 'loc') { st.loc = t.value; $('#manual-wrap').hidden = st.loc !== 'manual'; }
+  else if (k === 'manualBonus') st.manualBonus = parseNum(t.value) || 0;
+  else if (k === 'qty') st.qty = Math.floor(parseNum(t.value) || 0);
+  else if (k === 'fee') st.fee = parseNum(t.value) || 0;
+  else if (k === 'focusCost') { if (!rec) return; const v = parseNum(t.value); if (v == null) delete st.focusCost[rec.product]; else st.focusCost[rec.product] = v; }
+  else if (k === 'buyCity' || k === 'sellCity') { st[k] = t.value; renderPrices(); autoFetchIfNeeded(); }
+  else if (k === 'potion') {
+    S.pot.id = t.value;
+    if (!potRec(S.pot.id, S.pot.ench)) S.pot.ench = 0;
+    renderForm(); update(); save(); refocus('#f-potion'); autoFetchIfNeeded(); return;
+  }
+  update(); save();
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b || b.disabled) return;
+  if (b.dataset.tab) { if (S.tab !== b.dataset.tab) { S.tab = b.dataset.tab; renderAll(); save(); } return; }
+  if (b.dataset.chip) return onChip(b.dataset.chip, b.dataset.v);
+  if (b.dataset.seg) return onSeg(b, b.dataset.seg, b.dataset.v);
+  if (b.dataset.pick) return onPick(b.dataset.pick);
+  if (b.dataset.copy) return copyText(b.dataset.copy);
+  if (b.dataset.copyEl) { const el = document.getElementById(b.dataset.copyEl); if (el) copyText(el.textContent); return; }
+  if (b.dataset.here) {
+    const st = cur(); st.buyCity = b.dataset.here; st.sellCity = b.dataset.here;
+    renderForm(); update(); save(); autoFetchIfNeeded(); return;
+  }
+  if (b.dataset.server) { S.server = b.dataset.server; renderAll(); save(); return; }
+  if (b.dataset.action) {
+    api('POST', '/api/client/' + b.dataset.action).catch(() => toast('Não consegui falar com o app.'));
+    if (['link', 'unlink', 'restart', 'start'].includes(b.dataset.action)) { STATUS = Object.assign({}, STATUS, { busy: 'Trabalhando…' }); renderCapture(); }
+    return;
+  }
+  if (b.dataset.clear) { const k = b.dataset.clear; delete MAN[k]; updateRow(k, true); update(); save(); return; }
+  if (b.id === 'btn-fetch') return doFetch(false);
+  if (b.id === 'btn-clear-man') {
+    for (const input of document.querySelectorAll('[data-price]')) delete MAN[input.dataset.price];
+    renderPrices(); update(); save(); return;
+  }
+  if (b.id === 'dock-go') {
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    $('#ledger').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  }
+});
+document.addEventListener('keydown', e => {
+  const t = e.target;
+  if (!t.matches || !t.matches('[role="tab"]') || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+  const order = ['ref', 'pot', 'cap'];
+  const i = order.indexOf(S.tab);
+  const next = order[(i + (e.key === 'ArrowRight' ? 1 : order.length - 1)) % order.length];
+  S.tab = next; renderAll(); save(); refocus(`#tab-${next}`);
+  e.preventDefault();
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.tagName === 'SELECT') return;
+  if (t.dataset.price) {
+    const v = parseNum(t.value);
+    if (v == null) delete MAN[t.dataset.price]; else MAN[t.dataset.price] = v;
+    updateRow(t.dataset.price, false); update(); save(); return;
+  }
+  if (t.dataset.k) return onField(t);
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.id === 'g-server') { S.server = t.value; renderAll(); save(); refocus('#g-server'); return; }
+  if (t.id === 'opt-autostart') { api('POST', '/api/client/' + (t.checked ? 'autostart-on' : 'autostart-off')).catch(() => {}); return; }
+  if (t.tagName === 'SELECT' && t.dataset.k) return onField(t);
+  if (t.dataset.price) updateRow(t.dataset.price, true);
+});
+
+/* ---------- tempo real ---------- */
+function applyBook(m) {
+  const srv = BOOK[m.server] || (BOOK[m.server] = {});
+  const keys = new Set();
+  for (const k in m.entries) { srv[k] = m.entries[k]; keys.add(k); }
+  if (m.server !== S.server || S.tab === 'cap') return;
+  let touched = false;
+  for (const row of document.querySelectorAll('[data-book]')) {
+    if (keys.has(row.dataset.book)) { touched = true; updateRow(row.dataset.row, true, !!m.live); }
+  }
+  update();
+  if (touched && m.live) {
+    const pill = $('#cap-pill'); pill.classList.remove('pulse'); void pill.offsetWidth; pill.classList.add('pulse');
+  }
+}
+let es = null, lost = false, lostTimer = 0;
+async function resync() {
+  try {
+    const st = await fetch('/api/state').then(r => r.json());
+    BOOK = st.book || {}; STATUS = st.status || {}; FEED = st.feed || []; LOG = st.log || [];
+    renderAll();
+  } catch (e) { /* tenta de novo no próximo hello */ }
+}
+function connect() {
+  es = new EventSource('/api/events');
+  es.addEventListener('hello', () => {
+    clearTimeout(lostTimer);
+    $('#lost').hidden = true;
+    if (lost) { lost = false; resync(); }
+  });
+  es.addEventListener('book', ev => { try { applyBook(JSON.parse(ev.data)); } catch (e) {} });
+  es.addEventListener('status', ev => {
+    try { STATUS = JSON.parse(ev.data); } catch (e) { return; }
+    renderPill();
+    if (S.tab === 'cap') renderCapture(); else updateMarketHints();
+  });
+  es.addEventListener('feed', ev => {
+    try { FEED.unshift(JSON.parse(ev.data)); } catch (e) { return; }
+    if (FEED.length > 40) FEED.length = 40;
+    if (S.tab === 'cap') renderCapture();
+  });
+  es.addEventListener('log', ev => {
+    let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+    if (m.reset) LOG = m.lines || []; else LOG.push(...(m.lines || []));
+    if (LOG.length > 160) LOG = LOG.slice(-160);
+    if (S.tab === 'cap') {
+      const lb = $('#logbox');
+      if (lb) { lb.textContent = LOG.slice(-80).join('\n'); lb.scrollTop = lb.scrollHeight; } else renderCapture();
+    }
+  });
+  es.onerror = () => {
+    lost = true;
+    clearTimeout(lostTimer);
+    lostTimer = setTimeout(() => { if (lost) $('#lost').hidden = false; }, 5000);
+  };
+}
+window.addEventListener('pagehide', () => { try { navigator.sendBeacon('/api/bye', ''); } catch (e) {} });
+
+// Atualiza os "há X min" sem esperar um preço novo.
+setInterval(() => {
+  renderPill();
+  if (S.tab === 'cap') return;
+  for (const row of document.querySelectorAll('[data-row]')) {
+    const input = row.querySelector('input');
+    if (input) updateRow(row.dataset.row, false, false);
+  }
+  updateMarketHints();
+}, 15000);
+
+renderAll();
+connect();
+})();
+</script>
+</body>
+</html>

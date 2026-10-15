@@ -1,0 +1,4 @@
+# Saídas de build
+AlbionRefino.exe
+*.zip
+/dist/

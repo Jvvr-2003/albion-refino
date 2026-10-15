@@ -1,0 +1,148 @@
+// AlbionRefino: calculadora de refino e poções do Albion Online com preços
+// ao vivo vindos do Albion Data Client oficial (opção -p).
+package main
+
+import (
+	"context"
+	"embed"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"io"
+	"io/fs"
+	"log"
+	"net"
+	"net/http"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"syscall"
+	"time"
+)
+
+var version = "1.0.0"
+
+//go:embed web
+var webFiles embed.FS
+
+func main() {
+	port := flag.Int("port", 47115, "porta local do app (o Data Client manda os preços para ela)")
+	dataFlag := flag.String("data", "", "pasta de dados do app")
+	noWindow := flag.Bool("no-window", false, "não abre a janela (para testes)")
+	noAutoQuit := flag.Bool("no-autoquit", false, "não fecha o app quando a janela fecha")
+	flag.Parse()
+
+	dataDir := *dataFlag
+	if dataDir == "" {
+		dataDir = defaultDataDir()
+	}
+	if err := os.MkdirAll(dataDir, 0o755); err != nil {
+		showErrorBox("Albion Refino", "Não consegui criar a pasta de dados:\n"+dataDir+"\n\n"+err.Error())
+		os.Exit(1)
+	}
+
+	url := fmt.Sprintf("http://127.0.0.1:%d/", *port)
+
+	// Já tem um app aberto: só abre outra janela para ele.
+	if alreadyRunning(*port) {
+		if !*noWindow {
+			req, _ := http.NewRequest(http.MethodPost, url+"api/open-window", nil)
+			req.Header.Set("X-Albion-Refino", "1")
+			if resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req); err == nil {
+				resp.Body.Close()
+			} else {
+				_ = openAppWindow(url, filepath.Join(dataDir, "janela"))
+			}
+		}
+		return
+	}
+
+	logFile, _ := os.Create(filepath.Join(dataDir, "app.log"))
+	var logOut io.Writer = os.Stderr
+	if logFile != nil {
+		logOut = io.MultiWriter(os.Stderr, logFile)
+		defer logFile.Close()
+	}
+	logger := log.New(logOut, "", log.LstdFlags)
+
+	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", *port))
+	if err != nil {
+		showErrorBox("Albion Refino", fmt.Sprintf("A porta %d já está em uso por outro programa, então o app não consegue receber os preços do Data Client.\n\n%v", *port, err))
+		os.Exit(1)
+	}
+
+	web, err := fs.Sub(webFiles, "web")
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	app := &App{
+		dataDir:      dataDir,
+		port:         *port,
+		origin:       fmt.Sprintf("http://127.0.0.1:%d", *port),
+		book:         NewBook(filepath.Join(dataDir, "precos.json")),
+		feed:         &Feed{},
+		hub:          NewHub(),
+		logger:       logger,
+		web:          web,
+		quit:         make(chan string, 1),
+		settingsPath: filepath.Join(dataDir, "ajustes.json"),
+	}
+	app.dc = NewDataClient(app)
+	if err := app.book.Load(); err != nil {
+		logger.Printf("preços salvos ilegíveis, começando do zero: %v", err)
+	}
+	app.loadSettings()
+	logger.Printf("Albion Refino %s em %s (dados em %s)", version, url, dataDir)
+
+	stop := make(chan struct{})
+	go app.dc.Run(stop)
+	go app.autosave(stop)
+	go app.watchWindows(stop, !*noAutoQuit && !*noWindow)
+
+	srv := &http.Server{Handler: app.routes(), ReadHeaderTimeout: 10 * time.Second}
+	go func() {
+		if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
+			logger.Printf("servidor: %v", err)
+			app.Quit("erro no servidor")
+		}
+	}()
+
+	if !*noWindow {
+		app.openWindow()
+	}
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+	var reason string
+	select {
+	case reason = <-app.quit:
+	case <-sig:
+		reason = "interrompido"
+	}
+	logger.Printf("fechando: %s", reason)
+	close(stop)
+	app.dc.Shutdown()
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	_ = srv.Shutdown(shutdownCtx)
+	cancel()
+	if err := app.book.Save(); err != nil {
+		logger.Printf("salvar preços: %v", err)
+	}
+}
+
+func alreadyRunning(port int) bool {
+	c := &http.Client{Timeout: 800 * time.Millisecond}
+	resp, err := c.Get(fmt.Sprintf("http://127.0.0.1:%d/api/ping", port))
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	var v struct {
+		App string `json:"app"`
+	}
+	if json.NewDecoder(resp.Body).Decode(&v) != nil {
+		return false
+	}
+	return v.App == "albion-refino"
+}
