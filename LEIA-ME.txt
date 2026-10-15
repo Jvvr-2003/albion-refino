@@ -46,6 +46,13 @@ PROBLEMAS COMUNS
   quanto tempo foram vistos.
 
 
+ATUALIZAÇÃO
+
+- Toda vez que abre, o app confere se há versão nova no GitHub
+  (github.com/Jvvr-2003/albion-refino/releases). Se houver, ele baixa, troca o
+  próprio .exe e reabre já atualizado. Sem internet, abre a versão que já tem.
+
+
 ARQUIVOS
 
 - Preços, ajustes e log do app ficam em %LOCALAPPDATA%\AlbionRefino.

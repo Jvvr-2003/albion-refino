@@ -30,6 +30,8 @@ func main() {
 	dataFlag := flag.String("data", "", "pasta de dados do app")
 	noWindow := flag.Bool("no-window", false, "não abre a janela (para testes)")
 	noAutoQuit := flag.Bool("no-autoquit", false, "não fecha o app quando a janela fecha")
+	noUpdate := flag.Bool("no-update", false, "não procura versão nova no GitHub ao abrir")
+	updatedFrom := flag.String("updated-from", "", "uso interno: versão anterior, depois de atualizar")
 	flag.Parse()
 
 	dataDir := *dataFlag
@@ -65,6 +67,18 @@ func main() {
 	}
 	logger := log.New(logOut, "", log.LstdFlags)
 
+	// Procura versão nova antes de ocupar a porta, para a nova abrir no lugar.
+	cleanupOldExe()
+	if !*noUpdate {
+		updated, err := selfUpdate(logger)
+		if err != nil {
+			logger.Printf("atualização: %v", err)
+		}
+		if updated {
+			return
+		}
+	}
+
 	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", *port))
 	if err != nil {
 		showErrorBox("Albion Refino", fmt.Sprintf("A porta %d já está em uso por outro programa, então o app não consegue receber os preços do Data Client.\n\n%v", *port, err))
@@ -87,6 +101,7 @@ func main() {
 		web:          web,
 		quit:         make(chan string, 1),
 		settingsPath: filepath.Join(dataDir, "ajustes.json"),
+		updatedFrom:  *updatedFrom,
 	}
 	app.dc = NewDataClient(app)
 	if err := app.book.Load(); err != nil {

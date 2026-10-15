@@ -43,3 +43,5 @@ Sem dependências externas: só a biblioteca padrão do Go (1.22+).
 Só fazer commit e push na `main`. O GitHub Actions compila o `AlbionRefino.exe`
 e publica uma Release nova com versão automática (1.0.1, 1.0.2, ...).
 O exe mais recente fica em Releases, no lado direito da página do repositório.
+
+Ao abrir, o app consulta a última Release (`update.go`). Se a tag for mais nova que a versão dele, baixa o `AlbionRefino.exe`, renomeia o atual para `.old`, coloca o novo no lugar e reabre. Para pular: `AlbionRefino.exe -no-update`.

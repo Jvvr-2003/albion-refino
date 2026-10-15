@@ -1121,11 +1121,11 @@ function autoFetchIfNeeded() {
 
 /* ---------- toast ---------- */
 let toastTimer = 0;
-function toast(text) {
+function toast(text, ms) {
   const el = $('#toast');
   el.textContent = text; el.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.hidden = true; }, 2200);
+  toastTimer = setTimeout(() => { el.hidden = true; }, ms || 2200);
 }
 async function copyText(text) {
   try { await navigator.clipboard.writeText(text); toast('Copiado: ' + text); }
@@ -1347,6 +1347,9 @@ setInterval(() => {
 
 renderAll();
 connect();
+if (INIT.updatedFrom && INIT.version && INIT.updatedFrom !== INIT.version) {
+  toast(`App atualizado: versão ${INIT.updatedFrom} → ${INIT.version}`, 7000);
+}
 })();
 </script>
 </body>

@@ -32,6 +32,7 @@ type App struct {
 	settingsMu   sync.Mutex
 	settingsRaw  json.RawMessage
 	settingsPath string
+	updatedFrom  string
 	server       atomic.Value // string: servidor escolhido na tela
 
 	byeAt    atomic.Int64
@@ -222,13 +223,14 @@ func (a *App) handleState(w http.ResponseWriter, r *http.Request) {
 		settings = json.RawMessage("null")
 	}
 	writeJSON(w, map[string]any{
-		"version":  version,
-		"now":      time.Now().UnixMilli(),
-		"settings": settings,
-		"book":     a.book.MarshalAll(),
-		"status":   a.dc.Status(),
-		"feed":     a.feed.List(),
-		"log":      a.dc.LogLines(),
+		"version":     version,
+		"updatedFrom": a.updatedFrom,
+		"now":         time.Now().UnixMilli(),
+		"settings":    settings,
+		"book":        a.book.MarshalAll(),
+		"status":      a.dc.Status(),
+		"feed":        a.feed.List(),
+		"log":         a.dc.LogLines(),
 	})
 }
 
