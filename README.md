@@ -40,5 +40,6 @@ Sem dependências externas: só a biblioteca padrão do Go (1.22+).
 
 ## Atualizar e publicar
 
-- Cada `git push` na `main` compila o exe no GitHub Actions (aba Actions → artefato `AlbionRefino`).
-- Para publicar uma versão: `git tag v1.0.1 && git push origin v1.0.1`. O GitHub cria a Release com o `AlbionRefino.exe` anexado.
+Só fazer commit e push na `main`. O GitHub Actions compila o `AlbionRefino.exe`
+e publica uma Release nova com versão automática (1.0.1, 1.0.2, ...).
+O exe mais recente fica em Releases, no lado direito da página do repositório.
