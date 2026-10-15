@@ -277,6 +277,16 @@ details.manual p{margin:10px 0 0}
 
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:9px 16px;border-radius:999px;font-weight:700;box-shadow:0 8px 24px -10px var(--shadow);z-index:40;max-width:calc(100vw - 32px)}
 
+dialog#specs{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);color:var(--ink);padding:0;width:min(760px,calc(100vw - 32px));box-shadow:0 20px 50px -20px var(--shadow)}
+dialog#specs::backdrop{background:rgba(10,14,18,.5)}
+.specs-card{padding:18px;display:flex;flex-direction:column;gap:12px}
+.specs-card p{margin:0}
+.specs-tbl{border-collapse:collapse;width:100%;min-width:560px}
+.specs-tbl th{font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px}
+.specs-tbl td{padding:6px 8px;border-top:1px solid var(--line)}
+.specs-tbl td:first-child{font-weight:700;white-space:nowrap}
+.specs-tbl input{width:4.6rem;text-align:right;padding:6px 8px}
+.specs-preview{padding:10px 12px;background:var(--inset);border-radius:8px}
 .dock{display:none}
 @media (max-width:980px){
   .capgrid{grid-template-columns:minmax(0,1fr)}
@@ -308,6 +318,7 @@ details.manual p{margin:10px 0 0}
       </div>
     </div>
     <div class="globals">
+      <button type="button" class="btn ghost" data-open-specs="1">Níveis de refino</button>
       <button type="button" class="cap-pill" id="cap-pill" data-tab="cap" aria-label="Ver captura de preços"><i class="pdot"></i><span id="cap-pill-text">Carregando…</span></button>
       <label class="fld"><span class="lbl">Servidor</span>
         <select id="g-server">
@@ -362,6 +373,20 @@ details.manual p{margin:10px 0 0}
     <p><b>Receitas, foco base e valores de item</b> foram extraídos dos arquivos do jogo (ao-bin-dumps) em outubro de 2026, com os nomes do cliente em português.</p>
   </footer>
 </div>
+
+<dialog id="specs" aria-labelledby="specs-title">
+  <form method="dialog" class="specs-card">
+    <div class="sec-row"><h2 class="sec" id="specs-title">Níveis de refino</h2><button type="submit" class="linkbtn">Fechar</button></div>
+    <p class="muted">Copie do Destiny Board do jogo (0 a 100). O app calcula sozinho o foco de cada refino.</p>
+    <div class="tablewrap"><table class="specs-tbl">
+      <thead><tr><th scope="col">Recurso</th><th scope="col">Mestria</th><th scope="col">T4</th><th scope="col">T5</th><th scope="col">T6</th><th scope="col">T7</th><th scope="col">T8</th></tr></thead>
+      <tbody id="specs-body"></tbody>
+    </table></div>
+    <p id="specs-preview" class="specs-preview"></p>
+    <p class="muted" style="margin:0">Os níveis não mudam o retorno de recursos. O retorno depende do local, do foco e do bônus diário, e já aparece na conta.</p>
+    <div class="actions"><button type="submit" class="btn">Pronto</button></div>
+  </form>
+</dialog>
 
 <div class="dock" id="dock" aria-live="polite"></div>
 <div class="toast" id="toast" role="status" hidden></div>
@@ -479,6 +504,11 @@ const DEFAULTS = {
          buyMode: 'instant', sellMode: 'order', buyCity: 'Fort Sterling', sellCity: 'Fort Sterling', focusCost: {} },
   pot: { id: 'T4_POTION_HEAL', ench: 0, loc: 'Brecilien', manualBonus: 0, focus: false, daily: 0, qty: 10, fee: 500,
          buyMode: 'instant', sellMode: 'order', buyCity: 'Brecilien', sellCity: 'Brecilien', focusCost: {} },
+  specs: {
+    WOOD: { m: 0, t4: 0, t5: 0, t6: 0, t7: 0, t8: 0 }, ORE: { m: 0, t4: 0, t5: 0, t6: 0, t7: 0, t8: 0 },
+    FIBER: { m: 0, t4: 0, t5: 0, t6: 0, t7: 0, t8: 0 }, HIDE: { m: 0, t4: 0, t5: 0, t6: 0, t7: 0, t8: 0 },
+    ROCK: { m: 0, t4: 0, t5: 0, t6: 0, t7: 0, t8: 0 },
+  },
 };
 function merge(def, sav) {
   if (!sav || typeof sav !== 'object') return def;
@@ -566,6 +596,26 @@ function bookFallback(id, role, st) {
   return side.s === 'l' ? 'o preço ao vivo' : 'o preço da API';
 }
 
+/* ---------- foco pelos níveis de refino ---------- */
+// Destiny Board: cada nível de especialização dá +250 de eficiência de foco no
+// próprio tier e +30 em todo o refino daquele recurso; cada nível de mestria dá +30.
+// A cada 10.000 de eficiência o custo de foco cai pela metade.
+const SPEC_KEYS = ['t4', 't5', 't6', 't7', 't8'];
+const clampLvl = v => Math.max(0, Math.min(100, Math.round(Number(v) || 0)));
+function fceFor(fam, tier) {
+  const sp = (S.specs || {})[fam];
+  if (!sp) return 0;
+  let fce = 30 * clampLvl(sp.m);
+  for (const k of SPEC_KEYS) fce += 30 * clampLvl(sp[k]);
+  if (tier >= 4 && tier <= 8) fce += 250 * clampLvl(sp['t' + tier]);
+  return fce;
+}
+const focusFromFce = (base, fce) => base * Math.pow(0.5, fce / 10000);
+function autoFocus(rec) {
+  if (calcTab() !== 'ref') return rec.focus;
+  return Math.round(focusFromFce(rec.focus, fceFor(S.ref.fam, tierOf(rec.product))));
+}
+
 /* ---------- cálculo ---------- */
 function bonusParts(st, cat, focusOn) {
   let base = 0, spec = 0;
@@ -607,7 +657,7 @@ function compute(rec, st, cat) {
   const cost = mat + fee;
   const profit = rev - cost;
   const fc = st.focusCost[rec.product];
-  const focusPer = fc != null && fc !== '' && Number(fc) >= 0 ? Number(fc) : rec.focus;
+  const focusPer = fc != null && fc !== '' && Number(fc) >= 0 ? Number(fc) : autoFocus(rec);
   const gain = retBase * (BF.rrr - B0.rrr) * (1 + setupBuy);
   return { rec, B, lines, gross, returned, buyFee, mat, fee, ps, sell, revGross, tax, setup, rev, cost, profit,
            margin: cost > 0 ? profit / cost : null, missing, ok: missing.length === 0, focusPer, gain, taxRate, setupSell, setupBuy, live };
@@ -690,8 +740,10 @@ function howSection() {
         <input id="f-fee" data-k="fee" inputmode="decimal" autocomplete="off" value="${esc(fmtIn(Number(st.fee) || 0))}">
         <span class="hint" id="fee-hint"></span></label>
       <label class="fld"><span class="lbl">Foco por ${isRef ? 'refino' : 'craft'}</span>
-        <input id="f-focus" data-k="focusCost" inputmode="numeric" autocomplete="off" placeholder="${rec ? NF0.format(rec.focus) : ''}" value="${rec && st.focusCost[rec.product] != null ? esc(fmtIn(st.focusCost[rec.product])) : ''}">
-        <span class="hint">${rec ? `Base ${NF0.format(rec.focus)} sem especialização. Digite o valor que o jogo mostra para você.` : ''}</span></label>
+        <input id="f-focus" data-k="focusCost" inputmode="numeric" autocomplete="off" placeholder="${rec ? NF0.format(autoFocus(rec)) : ''}" value="${rec && st.focusCost[rec.product] != null ? esc(fmtIn(st.focusCost[rec.product])) : ''}">
+        <span class="hint">${rec ? (isRef
+          ? `${NF0.format(autoFocus(rec))} pelos seus níveis (base ${NF0.format(rec.focus)}, eficiência ${NF0.format(fceFor(S.ref.fam, tierOf(rec.product)))}). Deixe vazio para usar esse valor. <button type="button" class="linkbtn" data-open-specs="1">Níveis de refino</button>`
+          : `Base ${NF0.format(rec.focus)} sem especialização. Digite o valor que o jogo mostra para você.`) : ''}</span></label>
     </div>
     <p class="rrr-line" id="rrr-line"></p>
   </section>`;
@@ -1080,6 +1132,26 @@ async function copyText(text) {
   catch (e) { toast('Não consegui copiar. Selecione o texto e use Ctrl+C.'); }
 }
 
+function specsPreview() {
+  const el = $('#specs-preview'); if (!el) return;
+  const fam = S.ref.fam, rec = refRec(fam, S.ref.tier, S.ref.ench);
+  if (!rec) { el.textContent = ''; return; }
+  const fce = fceFor(fam, tierOf(rec.product)), f = autoFocus(rec);
+  el.innerHTML = `Receita atual, <b>${esc(nm(rec.product))} ${tierTag(rec.product)}</b>: eficiência ${NF0.format(fce)} → <b>${NF0.format(f)} de foco</b> por refino (base ${NF0.format(rec.focus)}, ${pct(f / rec.focus)} do custo). Com 10.000 de foco dá para ${NF0.format(Math.floor(FOCUS_PER_DAY / Math.max(1, f)))} refinos.`;
+}
+function openSpecs() {
+  const body = $('#specs-body');
+  body.innerHTML = Object.keys(FAM).map(fam => {
+    const sp = S.specs[fam];
+    return `<tr><td>${esc(FAM[fam].label)} → ${esc(FAM[fam].out)}</td>${['m'].concat(SPEC_KEYS).map(k =>
+      `<td><input type="number" min="0" max="100" step="1" inputmode="numeric" id="spec-${fam}-${k}" data-spec="${fam}|${k}" value="${clampLvl(sp[k])}" aria-label="${esc(FAM[fam].label)} ${k === 'm' ? 'mestria' : k.toUpperCase()}"></td>`).join('')}</tr>`;
+  }).join('');
+  specsPreview();
+  const d = $('#specs');
+  if (d.showModal) d.showModal(); else d.setAttribute('open', '');
+}
+$('#specs').addEventListener('close', () => { if (S.tab !== 'cap') { renderForm(); update(); } });
+
 function renderAll() {
   renderTabs();
   renderPill();
@@ -1144,6 +1216,7 @@ function onField(t) {
 document.addEventListener('click', e => {
   const b = e.target.closest('button');
   if (!b || b.disabled) return;
+  if (b.dataset.openSpecs) { e.preventDefault(); openSpecs(); return; }
   if (b.dataset.tab) { if (S.tab !== b.dataset.tab) { S.tab = b.dataset.tab; renderAll(); save(); } return; }
   if (b.dataset.chip) return onChip(b.dataset.chip, b.dataset.v);
   if (b.dataset.seg) return onSeg(b, b.dataset.seg, b.dataset.v);
@@ -1183,6 +1256,11 @@ document.addEventListener('keydown', e => {
 document.addEventListener('input', e => {
   const t = e.target;
   if (t.tagName === 'SELECT') return;
+  if (t.dataset.spec) {
+    const [fam, k] = t.dataset.spec.split('|');
+    S.specs[fam][k] = clampLvl(t.value);
+    specsPreview(); save(); return;
+  }
   if (t.dataset.price) {
     const v = parseNum(t.value);
     if (v == null) delete MAN[t.dataset.price]; else MAN[t.dataset.price] = v;
