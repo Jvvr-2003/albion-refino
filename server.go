@@ -33,6 +33,7 @@ type App struct {
 	settingsRaw  json.RawMessage
 	settingsPath string
 	updatedFrom  string
+	upd          updater
 	server       atomic.Value // string: servidor escolhido na tela
 
 	byeAt    atomic.Int64
@@ -96,6 +97,16 @@ func (h *Hub) Unsubscribe(ch chan []byte) {
 	h.mu.Unlock()
 }
 
+// CloseAll derruba as telas conectadas (elas reconectam sozinhas).
+func (h *Hub) CloseAll() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for ch := range h.clients {
+		delete(h.clients, ch)
+		close(ch)
+	}
+}
+
 func (h *Hub) Count() int {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -141,6 +152,10 @@ func (a *App) routes() http.Handler {
 	mux.HandleFunc("POST /api/aodp", a.handleAODP)
 	mux.HandleFunc("POST /api/client/{action}", a.handleClientAction)
 	mux.HandleFunc("POST /api/bye", a.handleBye)
+	mux.HandleFunc("POST /api/update", func(w http.ResponseWriter, r *http.Request) {
+		go a.applyUpdate()
+		writeJSON(w, map[string]any{"ok": true})
+	})
 	mux.HandleFunc("POST /api/open-window", func(w http.ResponseWriter, r *http.Request) {
 		go a.openWindow()
 		writeJSON(w, map[string]any{"ok": true})
@@ -225,6 +240,7 @@ func (a *App) handleState(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]any{
 		"version":     version,
 		"updatedFrom": a.updatedFrom,
+		"update":      a.updateStatus(),
 		"now":         time.Now().UnixMilli(),
 		"settings":    settings,
 		"book":        a.book.MarshalAll(),

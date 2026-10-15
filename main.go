@@ -32,6 +32,7 @@ func main() {
 	noAutoQuit := flag.Bool("no-autoquit", false, "não fecha o app quando a janela fecha")
 	noUpdate := flag.Bool("no-update", false, "não procura versão nova no GitHub ao abrir")
 	updatedFrom := flag.String("updated-from", "", "uso interno: versão anterior, depois de atualizar")
+	reuseWindow := flag.Bool("reuse-window", false, "uso interno: não abre janela nova, a aberta reconecta")
 	flag.Parse()
 
 	dataDir := *dataFlag
@@ -114,6 +115,9 @@ func main() {
 	go app.dc.Run(stop)
 	go app.autosave(stop)
 	go app.watchWindows(stop, !*noAutoQuit && !*noWindow)
+	if !*noUpdate {
+		go app.checkUpdates(stop)
+	}
 
 	srv := &http.Server{Handler: app.routes(), ReadHeaderTimeout: 10 * time.Second}
 	go func() {
@@ -124,7 +128,18 @@ func main() {
 	}()
 
 	if !*noWindow {
-		app.openWindow()
+		if *reuseWindow {
+			// Depois de atualizar, a janela antiga se reconecta sozinha. Se ela
+			// não voltar (foi fechada), abre uma nova.
+			go func() {
+				time.Sleep(15 * time.Second)
+				if !app.everSeen.Load() {
+					app.openWindow()
+				}
+			}()
+		} else {
+			app.openWindow()
+		}
 	}
 
 	sig := make(chan os.Signal, 1)
@@ -137,12 +152,24 @@ func main() {
 	}
 	logger.Printf("fechando: %s", reason)
 	close(stop)
+	app.hub.CloseAll()
 	app.dc.Shutdown()
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	_ = srv.Shutdown(shutdownCtx)
 	cancel()
 	if err := app.book.Save(); err != nil {
 		logger.Printf("salvar preços: %v", err)
+	}
+	app.upd.mu.Lock()
+	exe := app.upd.relExe
+	app.upd.mu.Unlock()
+	if exe != "" {
+		ln.Close()
+		if err := relaunch(exe, "-updated-from="+version, "-reuse-window"); err != nil {
+			logger.Printf("atualização: não consegui abrir a versão nova: %v", err)
+			rollbackRelease(exe)
+			_ = relaunch(exe)
+		}
 	}
 }
 

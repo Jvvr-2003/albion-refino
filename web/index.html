@@ -105,6 +105,12 @@ a{color:var(--accent)}
 .tab:hover{color:var(--ink)}
 .tab .count{font-size:12px;font-weight:800;background:var(--good-soft);color:var(--good);border-radius:999px;padding:1px 7px}
 
+.upd{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;background:var(--info-soft);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px}
+.upd b{color:var(--info)}
+.upd.err{background:var(--warn-soft)}
+.upd.err b{color:var(--warn)}
+.upd .btn{padding:6px 14px}
+.ver{font-size:12.5px;color:var(--muted);font-weight:500;margin-left:6px;font-family:var(--f-body);letter-spacing:0}
 .banner{display:flex;gap:10px;align-items:flex-start;background:var(--bad-soft);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px}
 .banner b{color:var(--bad)}
 
@@ -322,7 +328,7 @@ dialog#specs::backdrop{background:rgba(10,14,18,.5)}
     <div class="brand">
       <img src="/icon.svg" alt="">
       <div>
-        <h1>Albion <span>Refino e Poções</span></h1>
+        <h1>Albion <span>Refino e Poções</span><small class="ver" id="app-ver"></small></h1>
         <p>Preços ao vivo do mercado pelo Albion Data Client, com retorno de recursos, foco e taxas.</p>
       </div>
     </div>
@@ -360,6 +366,7 @@ dialog#specs::backdrop{background:rgba(10,14,18,.5)}
     </button>
   </nav>
 
+  <div class="upd" id="upd" role="status" hidden></div>
   <div class="banner" id="lost" hidden><span><b>O app parou de responder.</b> Feche esta janela e abra o AlbionRefino.exe de novo.</span></div>
 
   <div id="calc">
@@ -536,6 +543,8 @@ let BOOK = INIT.book || {};
 let STATUS = INIT.status || {};
 let FEED = INIT.feed || [];
 let LOG = INIT.log || [];
+let UPD = INIT.update || {};
+const PAGE_VERSION = INIT.version;
 if (!FAM[S.ref.fam]) S.ref.fam = 'WOOD';
 if (!refRec(S.ref.fam, S.ref.tier, 0)) S.ref.tier = 4;
 if (!refRec(S.ref.fam, S.ref.tier, S.ref.ench)) S.ref.ench = 0;
@@ -1149,6 +1158,23 @@ function autoFetchIfNeeded() {
   doFetch(true);
 }
 
+/* ---------- versão nova ---------- */
+function renderUpdate() {
+  $('#app-ver').textContent = PAGE_VERSION ? 'v' + PAGE_VERSION : '';
+  const el = $('#upd'), u = UPD || {};
+  el.classList.toggle('err', u.state === 'error');
+  if (u.state === 'available') {
+    el.innerHTML = `<span><b>Versão ${esc(u.latest)} disponível.</b> Você está na ${esc(u.current || PAGE_VERSION)}.</span><button type="button" class="btn" id="btn-update">Atualizar agora</button><a href="https://github.com/Jvvr-2003/albion-refino/releases" target="_blank" rel="noopener">O que mudou</a>`;
+  } else if (u.state === 'installing') {
+    el.innerHTML = `<span><b>Baixando a versão ${esc(u.latest || 'nova')}…</b> Leva alguns segundos.</span>`;
+  } else if (u.state === 'restarting') {
+    el.innerHTML = `<span><b>Reiniciando na versão ${esc(u.latest || 'nova')}…</b> A janela volta sozinha.</span>`;
+  } else if (u.state === 'error') {
+    el.innerHTML = `<span><b>A atualização não deu certo.</b> ${esc(u.error || '')}</span><button type="button" class="btn ghost" id="btn-update">Tentar de novo</button><a href="https://github.com/Jvvr-2003/albion-refino/releases/latest" target="_blank" rel="noopener">Baixar pelo GitHub</a>`;
+  }
+  el.hidden = !['available', 'installing', 'restarting', 'error'].includes(u.state);
+}
+
 /* ---------- toast ---------- */
 let toastTimer = 0;
 function toast(text, ms) {
@@ -1264,6 +1290,11 @@ document.addEventListener('click', e => {
     return;
   }
   if (b.dataset.clear) { const k = b.dataset.clear; delete MAN[k]; updateRow(k, true); update(); save(); return; }
+  if (b.id === 'btn-update') {
+    UPD = Object.assign({}, UPD, { state: 'installing' }); renderUpdate();
+    api('POST', '/api/update').catch(() => toast('Não consegui falar com o app.'));
+    return;
+  }
   if (b.id === 'btn-fetch') return doFetch(false);
   if (b.id === 'btn-clear-man') {
     for (const input of document.querySelectorAll('[data-price]')) delete MAN[input.dataset.price];
@@ -1331,11 +1362,14 @@ async function resync() {
 }
 function connect() {
   es = new EventSource('/api/events');
-  es.addEventListener('hello', () => {
+  es.addEventListener('hello', ev => {
+    let v = ''; try { v = JSON.parse(ev.data).version; } catch (e) {}
+    if (v && PAGE_VERSION && v !== PAGE_VERSION) { location.reload(); return; }
     clearTimeout(lostTimer);
     $('#lost').hidden = true;
     if (lost) { lost = false; resync(); }
   });
+  es.addEventListener('update', ev => { try { UPD = JSON.parse(ev.data); } catch (e) { return; } renderUpdate(); });
   es.addEventListener('book', ev => { try { applyBook(JSON.parse(ev.data)); } catch (e) {} });
   es.addEventListener('status', ev => {
     try { STATUS = JSON.parse(ev.data); } catch (e) { return; }
@@ -1359,7 +1393,8 @@ function connect() {
   es.onerror = () => {
     lost = true;
     clearTimeout(lostTimer);
-    lostTimer = setTimeout(() => { if (lost) $('#lost').hidden = false; }, 5000);
+    const wait = UPD && UPD.state === 'restarting' ? 30000 : 5000;
+    lostTimer = setTimeout(() => { if (lost) $('#lost').hidden = false; }, wait);
   };
 }
 window.addEventListener('pagehide', () => { try { navigator.sendBeacon('/api/bye', ''); } catch (e) {} });
@@ -1376,6 +1411,7 @@ setInterval(() => {
 }, 15000);
 
 renderAll();
+renderUpdate();
 connect();
 if (INIT.updatedFrom && INIT.version && INIT.updatedFrom !== INIT.version) {
   toast(`App atualizado: versão ${INIT.updatedFrom} → ${INIT.version}`, 7000);
