@@ -35,6 +35,7 @@ type App struct {
 	updatedFrom  string
 	upd          updater
 	server       atomic.Value // string: servidor escolhido na tela
+	icons        *iconCache
 
 	byeAt    atomic.Int64
 	lastSeen atomic.Int64
@@ -143,6 +144,7 @@ func (a *App) routes() http.Handler {
 	mux.HandleFunc("GET /{$}", a.handleIndex)
 	mux.HandleFunc("GET /data.json", a.handleStatic("data.json", "application/json"))
 	mux.HandleFunc("GET /icon.svg", a.handleStatic("icon.svg", "image/svg+xml"))
+	mux.HandleFunc("GET /img/{id}", a.handleIcon)
 	mux.HandleFunc("GET /api/ping", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, map[string]any{"app": "albion-refino", "version": version})
 	})

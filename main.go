@@ -103,6 +103,7 @@ func main() {
 		quit:         make(chan string, 1),
 		settingsPath: filepath.Join(dataDir, "ajustes.json"),
 		updatedFrom:  *updatedFrom,
+		icons:        newIconCache(dataDir),
 	}
 	app.dc = NewDataClient(app)
 	if err := app.book.Load(); err != nil {

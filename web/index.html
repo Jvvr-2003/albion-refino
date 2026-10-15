@@ -54,6 +54,9 @@
 }
 
 *,*::before,*::after{box-sizing:border-box}
+/* barras de rolagem invisíveis no app todo (a rolagem continua funcionando) */
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none;width:0;height:0}
 html,body{margin:0}
 body{background:var(--canvas);color:var(--ink);font-family:var(--f-body);font-size:14.5px;line-height:1.45;-webkit-font-smoothing:antialiased}
 [hidden]{display:none!important}
@@ -149,6 +152,7 @@ a{color:var(--ink);text-underline-offset:2px}
 .ph{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;padding:9px 11px 9px}
 .sec{margin:0;font-family:var(--f-mono);font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);line-height:1.3}
 .ph .tagr{font-size:12.5px;color:var(--muted);text-align:right}
+.ph .tagr.ih{gap:6px}
 .pb{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-in);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0;box-shadow:0 1px 2px var(--shadow)}
 .pb.flush{padding:0;overflow-x:auto}
 .pb > p{margin:0}
@@ -182,7 +186,13 @@ input[type="checkbox"]{width:16px;height:16px;padding:0;accent-color:var(--accen
 .seg button{border:1px solid transparent;background:none;border-radius:8px;padding:5px 12px;font-weight:500;font-size:13.5px;color:var(--muted);white-space:nowrap}
 .seg button:hover{color:var(--ink)}
 .seg button[aria-pressed="true"]{background:var(--panel);border-color:var(--line-2);color:var(--ink);box-shadow:0 1px 2px var(--shadow)}
-.recipe{margin:0;padding:10px 12px;background:var(--inset);border:1px solid var(--line);border-radius:10px;font-size:14px;line-height:1.5}
+.recipe{margin:0;padding:8px 12px;background:var(--inset);border:1px solid var(--line);border-radius:10px;font-size:14px;line-height:1.5;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.ri{display:inline-flex;align-items:center;gap:6px}
+.rop{color:var(--muted)}
+.ico{display:inline-block;flex:none;object-fit:contain;vertical-align:middle;filter:drop-shadow(0 1px 1px rgba(0,0,0,.12))}
+.ico.noimg{display:none}
+.ih{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.chip .ico{margin:-4px 0}
 .recipe b{font-family:var(--f-mono);font-weight:600}
 .rrr-line{margin:0;font-size:13.5px;color:var(--muted)}
 .rrr-line b{color:var(--ink);font-family:var(--f-mono)}
@@ -216,7 +226,8 @@ input[type="checkbox"]{width:16px;height:16px;padding:0;accent-color:var(--accen
 .prow{padding:10px 6px;margin:0 -6px;border-bottom:1px solid var(--line);border-radius:6px}
 .prow.flash{animation:flash 1.4s ease-out}
 @keyframes flash{0%{background:var(--good-soft)}100%{background:transparent}}
-.pname{grid-area:name;display:flex;align-items:center;gap:8px;min-width:0;font-weight:500}
+.pname{grid-area:name;display:flex;align-items:center;gap:10px;min-width:0;font-weight:500}
+.pname .ico{margin:-6px 0}
 .pn{min-width:0;overflow-wrap:anywhere}
 .tag{font-family:var(--f-mono);font-size:11px;font-weight:500;color:var(--muted);border:1px solid var(--line-2);border-radius:6px;padding:0 5px;white-space:nowrap;background:var(--inset)}
 .pqty{grid-area:qty;font-family:var(--f-mono);color:var(--muted)}
@@ -240,7 +251,7 @@ input[type="checkbox"]{width:16px;height:16px;padding:0;accent-color:var(--accen
 }
 
 /* conta (coluna da direita) */
-.ledger{position:sticky;top:14px;min-width:0;max-height:calc(100vh - 28px);overflow-y:auto;overscroll-behavior:contain;border-radius:var(--radius);scrollbar-width:thin}
+.ledger{position:sticky;top:14px;min-width:0;border-radius:var(--radius)}
 .missing{margin:0;padding:12px 14px;background:var(--bad-soft);border-radius:10px;font-size:13.5px}
 .missing ul{margin:6px 0 0;padding-left:18px}
 .bk{width:100%;border-collapse:collapse;font-size:13.5px}
@@ -267,6 +278,7 @@ input[type="checkbox"]{width:16px;height:16px;padding:0;accent-color:var(--accen
 .cmp{border-collapse:separate;border-spacing:6px;width:100%;min-width:620px;font-size:13.5px}
 .cmp th{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;font-weight:500;white-space:nowrap;padding:6px 8px}
 .cmp tbody th{font-family:var(--f-body);font-size:13.5px;letter-spacing:0;text-transform:none;color:var(--ink);font-weight:600}
+.cmp tbody th small,.ct tbody th small{display:block;margin-left:0}
 .cmp th .dot{margin-right:6px;vertical-align:baseline}
 .cmp th small{font-weight:400;margin-left:5px;color:var(--muted)}
 .cmp td{padding:0}
@@ -281,7 +293,7 @@ input[type="checkbox"]{width:16px;height:16px;padding:0;accent-color:var(--accen
 .ct{border-collapse:collapse;width:100%;min-width:780px;font-size:13.5px}
 .ct th{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;text-align:right;white-space:nowrap;padding:10px 12px;border-bottom:1px solid var(--line)}
 .ct th:first-child,.ct tbody th{text-align:left}
-.ct tbody th{font-family:var(--f-body);font-size:13.5px;letter-spacing:0;text-transform:none;color:var(--ink);font-weight:500;white-space:normal;min-width:150px}
+.ct tbody th{font-family:var(--f-body);font-size:13.5px;letter-spacing:0;text-transform:none;color:var(--ink);font-weight:500;white-space:normal;min-width:190px}
 .ct tbody th small{display:block;color:var(--muted);font-weight:400;font-size:11.5px;font-family:var(--f-mono)}
 .ct td{padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
 .ct td.use{background:var(--inset);box-shadow:inset 1px 0 0 var(--line-2),inset -1px 0 0 var(--line-2)}
@@ -598,6 +610,8 @@ const kk = v => {
 const fmtIn = v => (Number.isInteger(v) ? NF0.format(v) : NF2.format(v));
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const nm = id => (EN && DATA.E && DATA.E[id]) || DATA.N[id] || id;
+// Ícone do item (o app baixa do serviço oficial do jogo e guarda na pasta de dados).
+const ico = (id, size) => `<img class="ico" src="/img/${encodeURIComponent(id)}" alt="" width="${size || 28}" height="${size || 28}" loading="lazy" decoding="async">`;
 const tierOf = id => { const m = /^T(\d)/.exec(id); return m ? +m[1] : 0; };
 const enchOf = id => { const m = /@(\d)$/.exec(id); return m ? +m[1] : 0; };
 const tierTag = id => { const t = tierOf(id), e = enchOf(id); return t > 1 ? `T${t}${e ? '.' + e : ''}` : ''; };
@@ -834,14 +848,15 @@ function locOptions(st, cat) {
   return `<optgroup label="${T('Cidades (18% de base)', 'Cities (18% base)')}">${cities}</optgroup><optgroup label="${T('Ilhas e outros', 'Islands and others')}">${o('island-bonus', `${T('Ilha com bônus de ' + word, 'Island with ' + word + ' bonus')} (+${Math.round((SPEC[cat] || 0) * 100)}%)`)}${o('island', T('Ilha sem bônus (0%)', 'Island without bonus (0%)'))}${o('manual', T('Outro local (informar o bônus)', 'Other place (enter the bonus)'))}</optgroup>`;
 }
 function recipeLine(rec) {
-  return rec.ing.map(g => `<b>${NF0.format(g.q)}×</b> ${esc(nm(g.id))}`).join(' + ') + ` → <b>${rec.out}×</b> ${esc(nm(rec.product))}`;
+  const part = (q, id) => `<span class="ri">${ico(id, 26)}<span><b>${NF0.format(q)}×</b> ${esc(nm(id))}</span></span>`;
+  return rec.ing.map(g => part(g.q, g.id)).join('<span class="rop">+</span>') + `<span class="rop">→</span>` + part(rec.out, rec.product);
 }
 function whatSection() {
   if (calcTab() === 'ref') {
     const st = S.ref, fam = DATA.F[st.fam];
     const rec = refRec(st.fam, st.tier, st.ench);
     return `<section class="panel" aria-label="${T('O que refinar', 'What to refine')}">${panelHtml(T('O que refinar', 'What to refine'), `
-      <div class="chips" role="group" aria-label="${T('Recurso', 'Resource')}">${Object.keys(FAM).map(k => chip('fam', k, `${FAM[k].label} → ${FAM[k].out}`, k === st.fam)).join('')}</div>
+      <div class="chips" role="group" aria-label="${T('Recurso', 'Resource')}">${Object.keys(FAM).map(k => chip('fam', k, `${ico(DATA.F[k].r['4.0'][0], 20)}${FAM[k].label} → ${FAM[k].out}`, k === st.fam)).join('')}</div>
       <div class="chips" role="group" aria-label="Tier">${[2, 3, 4, 5, 6, 7, 8].map(t => chip('tier', t, `T${t} <small>${TIER_NAME[t]}</small>`, t === st.tier)).join('')}</div>
       <div class="chips" role="group" aria-label="${T('Encantamento', 'Enchantment')}">${[0, 1, 2, 3, 4].map(e => chip('ench', e, `.${e} ${ENCH[e]}`, e === st.ench,
         { dot: e, disabled: !fam.r[st.tier + '.' + e], title: !fam.r[st.tier + '.' + e] ? T('Não existe no jogo para este tier', 'Does not exist in the game for this tier') : '' })).join('')}</div>
@@ -948,7 +963,7 @@ function priceRow(id, role, q, st) {
   const val = p && p.v != null ? fmtIn(p.v) : '';
   const domId = 'p_' + key.replace(/[^A-Za-z0-9]/g, '_');
   return `<div class="prow" data-row="${esc(key)}" data-book="${esc(id + '|' + city)}">
-    <div class="pname"><i class="dot e${e}"></i><span class="pn">${esc(nm(id))}</span>${tag ? `<span class="tag">${tag}</span>` : ''}</div>
+    <div class="pname">${ico(id, 40)}<span class="pn">${esc(nm(id))}</span>${tag ? `<span class="tag">${tag}</span>` : ''}</div>
     <div class="pqty">${NF0.format(q)}×</div>
     <div class="pin"><input id="${domId}" data-price="${esc(key)}" data-id="${esc(id)}" data-role="${role}" inputmode="decimal" autocomplete="off" value="${esc(val)}" placeholder="${T('preço', 'price')}" aria-label="${T('Preço de', 'Price of')} ${esc(nm(id))}">
       <div class="badges" data-badge="${esc(key)}">${badgeHtml(p, id, role, st)}</div></div>
@@ -1013,7 +1028,7 @@ function updateMarketHints() {
   const byCity = {};
   for (const n of need) (byCity[n.city] = byCity[n.city] || []).push(n);
   todoEl.innerHTML = Object.keys(byCity).map(city => `<p><b>${T('Pesquise no mercado de', 'Search the market in')} ${esc(city)}</b> <span class="muted">${T('(clique para copiar o nome e colar na busca do jogo)', '(click to copy the name and paste it in the game search)')}</span></p>
-    <div class="chips">${byCity[city].map(n => `<button type="button" class="chip" data-copy="${esc(nm(n.id))}">${esc(nm(n.id))} <span class="city">${tierTag(n.id)}${n.p ? ' · ' + (n.p.src === 'api' ? 'API ' : '') + ago(n.p.at) : ' · ' + T('sem preço', 'no price')}</span></button>`).join('')}</div>`).join('');
+    <div class="chips">${byCity[city].map(n => `<button type="button" class="chip" data-copy="${esc(nm(n.id))}">${ico(n.id, 20)}${esc(nm(n.id))} <span class="city">${tierTag(n.id)}${n.p ? ' · ' + (n.p.src === 'api' ? 'API ' : '') + ago(n.p.at) : ' · ' + T('sem preço', 'no price')}</span></button>`).join('')}</div>`).join('');
   todoEl.hidden = false;
 }
 
@@ -1038,7 +1053,7 @@ function renderCities() {
     const when = live ? T('ao vivo ', 'live ') + agoShort(side.t) : 'API ' + ago(side.t);
     return `<div class="cl${old ? ' old' : ''}" title="${esc(when)}"><span>${label}</span><b>${money(side.p)}${live ? '<i class="lv"></i>' : ''}</b></div>`;
   };
-  const row = (id, useCity) => `<tr><th scope="row">${esc(nm(id))}<small>${tierTag(id)}</small></th>${CITIES.map(c =>
+  const row = (id, useCity) => `<tr><th scope="row"><span class="ih">${ico(id, 34)}<span>${esc(nm(id))}<small>${tierTag(id)}</small></span></span></th>${CITIES.map(c =>
     `<td class="${c === useCity ? 'use' : ''}">${line(bookSide(id, c, true), 'insta')}${line(bookSide(id, c, false), 'order')}</td>`).join('')}</tr>`;
   el.innerHTML = panelHtml(T('Preços em todas as cidades', 'Prices in every city'), `<p class="tbl-note">${T('Insta: menor ordem de venda (o que você paga comprando na hora). Order: maior ordem de compra. Em destaque, a cidade que a conta usa. O ponto verde marca preço ao vivo; preço com mais de 1 hora fica apagado.',
       'Insta: lowest sell order (what you pay buying instantly). Order: highest buy order. Highlighted: the city used in the math. The green dot marks a live price; prices older than 1 hour are dimmed.')}</p>
@@ -1073,12 +1088,12 @@ function renderLedger() {
     const need = Math.ceil(qty * g.q * (1 - (g.ret ? r.B.rrr : 0)) - 1e-9);
     const p = priceOf(g.id, 'buy', st);
     const thin = p && p.src === 'live' && st.buyMode === 'instant' && p.a > 0 && need > p.a;
-    return `<li${thin ? ' class="warnline"' : ''}><span>${NF0.format(need)}× ${esc(nm(g.id))}</span><span>${p && p.v != null ? '≈ ' + money(need * p.v * (1 + r.setupBuy)) : ''}${thin ? ' · ' + T(`só ${NF0.format(p.a)} un. nesse preço`, `only ${NF0.format(p.a)} pcs at this price`) : ''}</span></li>`;
+    return `<li${thin ? ' class="warnline"' : ''}><span class="ih">${ico(g.id, 22)}${NF0.format(need)}× ${esc(nm(g.id))}</span><span>${p && p.v != null ? '≈ ' + money(need * p.v * (1 + r.setupBuy)) : ''}${thin ? ' · ' + T(`só ${NF0.format(p.a)} un. nesse preço`, `only ${NF0.format(p.a)} pcs at this price`) : ''}</span></li>`;
   }).join('');
   const nUnits = isRef ? T('refinos', 'refines') : 'crafts';
   const buy = `<div class="block"><h3>${EN ? `For ${NF0.format(qty)} ${nUnits}, buy` : `Para ${NF0.format(qty)} ${nUnits}, compre`}</h3><ul>${buyList}
     <li><span>${T('Taxa da estação no total', 'Total station fee')}</span><span>≈ ${money(r.fee * qty)}</span></li>
-    <li><span>${T('Você recebe', 'You get')} ${NF0.format(qty * out)}× ${esc(nm(rec.product))}</span><span>${r.ok ? T('líquido ≈ ', 'net ≈ ') + money(r.rev * qty) : ''}</span></li></ul></div>`;
+    <li><span class="ih">${ico(rec.product, 22)}${T('Você recebe', 'You get')} ${NF0.format(qty * out)}× ${esc(nm(rec.product))}</span><span>${r.ok ? T('líquido ≈ ', 'net ≈ ') + money(r.rev * qty) : ''}</span></li></ul></div>`;
   const fp = r.focusPer > 0 ? r.gain / r.focusPer : 0;
   const one = isRef ? T('refino', 'refine') : 'craft';
   const focus = `<div class="block"><h3>${T('Foco', 'Focus')}</h3>${EN
@@ -1092,7 +1107,7 @@ function renderLedger() {
       : `<p>Sem foco. Com foco o retorno iria para ${pct(bonusParts(st, catOf(), true).rrr)} e o lucro subiria <b>${signed(r.gain / out)}</b> por ${unit}${r.focusPer > 0 ? ` (${NF2.format(fp)} prata por ponto de foco)` : ''}.</p>`)}</div>`;
   el.innerHTML = `<div class="panel">${panelHtml(isRef ? T('Conta do refino', 'Refine breakdown') : T('Conta do craft', 'Craft breakdown'),
     `${missing}<p class="rrr-line"><b>${pct(r.B.rrr)}</b> ${T('de retorno de recursos', 'resource return')} · ${bonusText(r.B)}</p>${bk}${buy}${focus}`,
-    `<span class="tagr">${esc(nm(rec.product))} · ${tierTag(rec.product)}</span>`)}</div>`;
+    `<span class="tagr ih">${ico(rec.product, 22)}${esc(nm(rec.product))} · ${tierTag(rec.product)}</span>`)}</div>`;
   return r;
 }
 // Lucro por unidade de cada tier (refino) ou de cada poção do mesmo tipo, no encantamento atual.
@@ -1121,6 +1136,14 @@ function sparkHtml() {
     return `<i class="${cls}" style="height:${h.toFixed(1)}px" title="${esc(x.lbl + ': ' + (x.v == null ? T('sem preço', 'no price') : signed(x.v)))}"></i>`;
   }).join('')}</span>`;
 }
+// A conta fica presa na tela ao rolar. Se ela for mais alta que a janela, rola
+// junto com a página até aparecer o fim e só então fica presa (sem rolagem própria).
+function stickLedger() {
+  const el = $('#ledger'); if (!el) return;
+  const h = el.offsetHeight, vh = window.innerHeight;
+  el.style.top = (h + 28 > vh ? vh - h - 14 : 14) + 'px';
+}
+window.addEventListener('resize', stickLedger);
 function renderKpis(r) {
   const el = $('#kpis'), rec = curRec(), st = cur();
   if (!rec || !r) { el.innerHTML = ''; return; }
@@ -1155,14 +1178,14 @@ function renderCompare() {
     title = `${T('Todos os tiers de', 'Every tier of')} ${FAM[fam].label} → ${FAM[fam].out}`;
     recFor = (t, e) => refRec(fam, t, e);
     isSel = (t, e) => t === S.ref.tier && e === S.ref.ench;
-    rowLabel = t => `T${t}<small>${TIER_NAME[t]}</small>`;
+    rowLabel = t => { const r0 = refRec(fam, t, 0); return `<span class="ih">${r0 ? ico(r0.product, 30) : ''}<span>T${t}<small>${TIER_NAME[t]}</small></span></span>`; };
   } else {
     const type = POTS[S.pot.id].type;
     rows = POT_BY_TYPE[type]; cols = [0, 1, 2, 3];
     title = `${T('Todas as versões', 'Every version')}: ${typeLabel(type)}`;
     recFor = (id, e) => potRec(id, e);
     isSel = (id, e) => id === S.pot.id && e === S.pot.ench;
-    rowLabel = id => `${esc(nm(id))}<small>T${POTS[id].tier}</small>`;
+    rowLabel = id => `<span class="ih">${ico(id, 30)}<span>${esc(nm(id))}<small>T${POTS[id].tier}</small></span></span>`;
   }
   let filled = 0, total = 0;
   const body = rows.map(rk => `<tr><th scope="row">${rowLabel(rk)}</th>${cols.map(e => {
@@ -1202,6 +1225,7 @@ function update() {
   const qh = $('#qty-hint');
   if (qh && rec) qh.textContent = rec.out > 1 ? `= ${NF0.format(Math.max(0, Math.floor(Number(st.qty) || 0)) * rec.out)} ${T('poções', 'potions')}` : '';
   const r = renderLedger();
+  stickLedger();
   renderKpis(r);
   renderCities();
   renderCompare();
@@ -1268,7 +1292,7 @@ function renderCapture() {
 
   const feed = FEED.length ? `<ul class="feed">${FEED.map(f => `<li>
       <div class="fh"><b>${esc(f.c || (T('local ', 'location ') + (f.loc || '?')))}</b><span class="muted">${clock(f.t)} · ${f.s === 'r' ? T('ordens de compra', 'buy orders') : T('ordens de venda', 'sell orders')} · ${NF0.format(f.n)}</span></div>
-      <div class="fi">${(f.i || []).map(l => `<span>${esc(nm(l.id))} <i>${tierTag(l.id)}</i> <b>${money(l.p)}</b> <i>(${NF0.format(l.a)})</i></span>`).join('')}</div>
+      <div class="fi">${(f.i || []).map(l => `<span class="ih">${ico(l.id, 20)}${esc(nm(l.id))} <i>${tierTag(l.id)}</i> <b>${money(l.p)}</b> <i>(${NF0.format(l.a)})</i></span>`).join('')}</div>
     </li>`).join('')}</ul>` : `<p class="empty">${T('Nenhuma captura ainda. Abra o mercado no jogo e pesquise um item.', 'Nothing captured yet. Open the market in game and search for an item.')}</p>`;
 
   $('#cap').innerHTML = `<div class="capgrid">
@@ -1396,7 +1420,7 @@ function openSpecs() {
   const body = $('#specs-body');
   body.innerHTML = Object.keys(FAM).map(fam => {
     const sp = S.specs[fam];
-    return `<tr><td>${esc(FAM[fam].label)} → ${esc(FAM[fam].out)}</td>${SPEC_KEYS.map(k =>
+    return `<tr><td><span class="ih">${ico(DATA.F[fam].r['4.0'][0], 26)}${esc(FAM[fam].label)} → ${esc(FAM[fam].out)}</span></td>${SPEC_KEYS.map(k =>
       `<td><input type="number" min="0" max="100" step="1" inputmode="numeric" id="spec-${fam}-${k}" data-spec="${fam}|${k}" value="${clampLvl(sp[k])}" aria-label="${esc(FAM[fam].label)} ${k.toUpperCase()}"></td>`).join('')}</tr>`;
   }).join('');
   specsPreview();
@@ -1510,6 +1534,10 @@ document.addEventListener('click', e => {
     $('#ledger').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
   }
 });
+document.addEventListener('error', e => {
+  const t = e.target;
+  if (t && t.classList && t.classList.contains('ico')) t.classList.add('noimg');
+}, true);
 document.addEventListener('keydown', e => {
   const t = e.target;
   if (!t.matches || !t.matches('[role="tab"]') || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
