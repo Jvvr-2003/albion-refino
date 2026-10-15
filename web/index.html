@@ -377,9 +377,9 @@ dialog#specs::backdrop{background:rgba(10,14,18,.5)}
 <dialog id="specs" aria-labelledby="specs-title">
   <form method="dialog" class="specs-card">
     <div class="sec-row"><h2 class="sec" id="specs-title">Níveis de refino</h2><button type="submit" class="linkbtn">Fechar</button></div>
-    <p class="muted">Copie do Destiny Board do jogo (0 a 100). O app calcula sozinho o foco de cada refino.</p>
+    <p class="muted">No Destiny Board, cada linha de refino tem 5 nós: do primeiro abaixo do topo até o último são T4, T5, T6, T7 e T8. Copie o nível de cada um (0 a 100). O app calcula sozinho o foco de cada refino.</p>
     <div class="tablewrap"><table class="specs-tbl">
-      <thead><tr><th scope="col">Recurso</th><th scope="col">Mestria</th><th scope="col">T4</th><th scope="col">T5</th><th scope="col">T6</th><th scope="col">T7</th><th scope="col">T8</th></tr></thead>
+      <thead><tr><th scope="col">Recurso</th><th scope="col">T4</th><th scope="col">T5</th><th scope="col">T6</th><th scope="col">T7</th><th scope="col">T8</th></tr></thead>
       <tbody id="specs-body"></tbody>
     </table></div>
     <p id="specs-preview" class="specs-preview"></p>
@@ -597,15 +597,15 @@ function bookFallback(id, role, st) {
 }
 
 /* ---------- foco pelos níveis de refino ---------- */
-// Destiny Board: cada nível de especialização dá +250 de eficiência de foco no
-// próprio tier e +30 em todo o refino daquele recurso; cada nível de mestria dá +30.
+// Destiny Board: cada linha de refino tem os nós T4 a T8. Cada nível dá +250 de
+// eficiência de foco no próprio tier e +30 em todo o refino daquele recurso.
 // A cada 10.000 de eficiência o custo de foco cai pela metade.
 const SPEC_KEYS = ['t4', 't5', 't6', 't7', 't8'];
 const clampLvl = v => Math.max(0, Math.min(100, Math.round(Number(v) || 0)));
 function fceFor(fam, tier) {
   const sp = (S.specs || {})[fam];
   if (!sp) return 0;
-  let fce = 30 * clampLvl(sp.m);
+  let fce = 0;
   for (const k of SPEC_KEYS) fce += 30 * clampLvl(sp[k]);
   if (tier >= 4 && tier <= 8) fce += 250 * clampLvl(sp['t' + tier]);
   return fce;
@@ -1143,8 +1143,8 @@ function openSpecs() {
   const body = $('#specs-body');
   body.innerHTML = Object.keys(FAM).map(fam => {
     const sp = S.specs[fam];
-    return `<tr><td>${esc(FAM[fam].label)} → ${esc(FAM[fam].out)}</td>${['m'].concat(SPEC_KEYS).map(k =>
-      `<td><input type="number" min="0" max="100" step="1" inputmode="numeric" id="spec-${fam}-${k}" data-spec="${fam}|${k}" value="${clampLvl(sp[k])}" aria-label="${esc(FAM[fam].label)} ${k === 'm' ? 'mestria' : k.toUpperCase()}"></td>`).join('')}</tr>`;
+    return `<tr><td>${esc(FAM[fam].label)} → ${esc(FAM[fam].out)}</td>${SPEC_KEYS.map(k =>
+      `<td><input type="number" min="0" max="100" step="1" inputmode="numeric" id="spec-${fam}-${k}" data-spec="${fam}|${k}" value="${clampLvl(sp[k])}" aria-label="${esc(FAM[fam].label)} ${k.toUpperCase()}"></td>`).join('')}</tr>`;
   }).join('');
   specsPreview();
   const d = $('#specs');
