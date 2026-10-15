@@ -1,5 +1,7 @@
 # Albion Refino e Poções
 
+**[Baixar o AlbionRefino.exe (versão mais nova)](https://github.com/Jvvr-2003/albion-refino/releases/latest/download/AlbionRefino.exe)** · [todas as versões](https://github.com/Jvvr-2003/albion-refino/releases)
+
 App para Windows que calcula o lucro de refino e de poções do Albion Online com
 preços ao vivo do mercado.
 
