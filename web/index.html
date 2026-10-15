@@ -210,15 +210,6 @@ input[type="checkbox"]{width:18px;height:18px;padding:0;accent-color:var(--accen
 .pill.pos{background:var(--good-soft);color:var(--good)}.pill.neg{background:var(--bad-soft);color:var(--bad)}
 .missing{margin:0;padding:12px 14px;background:var(--bad-soft);border-radius:8px}
 .missing ul{margin:6px 0 0;padding-left:18px}
-.mk{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14.5px}
-.mk caption{text-align:left;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-bottom:4px}
-.mk th{font-size:12px;font-weight:700;color:var(--muted);text-align:right;padding:0 0 4px 10px;white-space:nowrap}
-.mk th:first-child{text-align:left;padding-left:0}
-.mk td{padding:5px 0 5px 10px;border-bottom:1px dashed var(--line);text-align:right;white-space:nowrap;vertical-align:top}
-.mk td:first-child{text-align:left;white-space:normal;padding-left:0}
-.mk td small{display:block;font-size:11.5px;color:var(--muted)}
-.mk td.use{font-weight:800;color:var(--accent)}
-.mk .note{font-size:12.5px;color:var(--muted);text-align:left;white-space:normal}
 .bk{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:15px}
 .bk caption{text-align:left;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-bottom:4px}
 .bk td{padding:5px 0;border-bottom:1px dashed var(--line);vertical-align:top}
@@ -250,6 +241,18 @@ input[type="checkbox"]{width:18px;height:18px;padding:0;accent-color:var(--accen
 .cell.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .cell:hover{border-color:var(--muted)}
 .cell .lv{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--good);margin-left:6px;vertical-align:middle}
+.ct{border-collapse:collapse;width:100%;min-width:760px;font-variant-numeric:tabular-nums;font-size:14px}
+.ct th{font-size:13px;color:var(--muted);font-weight:700;text-align:right;white-space:nowrap;padding:8px 10px;border-bottom:1px solid var(--line)}
+.ct th:first-child,.ct tbody th{text-align:left}
+.ct tbody th{color:var(--ink);font-weight:600;white-space:normal;min-width:140px}
+.ct tbody th small{display:block;color:var(--muted);font-weight:500;font-size:12px}
+.ct td{padding:6px 10px;border-bottom:1px dashed var(--line);vertical-align:top}
+.ct td.use{background:var(--inset);box-shadow:inset 0 0 0 1px var(--accent)}
+.ct .cl{display:flex;justify-content:space-between;gap:8px;white-space:nowrap;line-height:1.35}
+.ct .cl span{font-size:11.5px;color:var(--muted)}
+.ct .cl.old b{color:var(--muted);font-weight:500}
+.ct .lv{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--good);margin-left:5px;vertical-align:middle}
+.ct tr.sep td{font-size:12.5px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-bottom:0;padding-top:12px}
 
 /* aba Captura */
 .capgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:18px;align-items:start}
@@ -374,6 +377,7 @@ dialog#specs::backdrop{background:rgba(10,14,18,.5)}
       <div class="form" id="form" role="tabpanel"></div>
       <aside class="ledger" id="ledger" aria-live="polite"></aside>
     </main>
+    <section class="compare" id="cities" style="margin-top:16px"></section>
     <section class="compare" id="compare" style="margin-top:16px"></section>
   </div>
 
@@ -892,25 +896,26 @@ function bonusText(B) {
   if (B.daily) parts.push(`${NF0.format(B.daily * 100)} do bônus diário`);
   return `bônus de produção ${NF0.format(B.total * 100)}%${parts.length ? ' (' + parts.join(' + ') + ')' : ''}`;
 }
-// Preços de buy insta (menor ordem de venda) e buy order (maior ordem de compra)
-// de cada material e do produto, marcando o que a conta está usando.
-function marketTable(rec, st) {
-  const cell = (side, used) => {
-    if (!side || !(side.p > 0)) return `<td${used ? ' class="use"' : ''}>—</td>`;
-    const src = side.s === 'l' ? 'ao vivo ' + agoShort(side.t) : 'API ' + ago(side.t);
-    return `<td${used ? ' class="use"' : ''}>${money(side.p)}<small>${src}</small></td>`;
+// Preços por cidade: buy insta (menor ordem de venda) e buy order (maior ordem
+// de compra) de cada material e do produto, em todas as cidades.
+function renderCities() {
+  const el = $('#cities'), rec = curRec(), st = cur();
+  if (!el) return;
+  if (!rec) { el.innerHTML = ''; return; }
+  const line = (side, label) => {
+    if (!side || !(side.p > 0)) return `<div class="cl"><span>${label}</span><b class="muted">—</b></div>`;
+    const live = side.s === 'l', old = Date.now() - side.t > FRESH_MS;
+    const when = live ? 'ao vivo ' + agoShort(side.t) : 'API ' + ago(side.t);
+    return `<div class="cl${old ? ' old' : ''}" title="${esc(when)}"><span>${label}</span><b>${money(side.p)}${live ? '<i class="lv"></i>' : ''}</b></div>`;
   };
-  const row = (id, city, useInsta) => {
-    const o = bookSide(id, city, true), r = bookSide(id, city, false);
-    const gap = o && r && o.p > 0 && r.p > 0 ? pct((o.p - r.p) / o.p) : '';
-    return `<tr><td>${esc(nm(id))} <span class="muted">${tierTag(id)}</span><small>${esc(city)}${gap ? ' · diferença ' + gap : ''}</small></td>${cell(o, useInsta)}${cell(r, !useInsta)}</tr>`;
-  };
-  const ings = rec.ing.map(g => row(g.id, st.buyCity, st.buyMode === 'instant')).join('');
-  const prod = row(rec.product, st.sellCity, st.sellMode === 'order');
-  return `<table class="mk"><caption>Preços no mercado</caption>
-    <thead><tr><th scope="col">Item</th><th scope="col">Buy insta<br><span style="font-weight:500">menor venda</span></th><th scope="col">Buy order<br><span style="font-weight:500">maior compra</span></th></tr></thead>
-    <tbody>${ings}<tr><td colspan="3" class="note">Você vende:</td></tr>${prod}</tbody></table>
-    <p class="hint" style="margin:0">Em destaque, o preço que a conta usa. Preço digitado à mão vale por cima destes.</p>`;
+  const row = (id, useCity) => `<tr><th scope="row">${esc(nm(id))}<small>${tierTag(id)}</small></th>${CITIES.map(c =>
+    `<td class="${c === useCity ? 'use' : ''}">${line(bookSide(id, c, true), 'insta')}${line(bookSide(id, c, false), 'order')}</td>`).join('')}</tr>`;
+  el.innerHTML = `<div class="sec-row"><h2 class="sec">Preços em todas as cidades</h2></div>
+    <p class="muted">Insta: menor ordem de venda (o que você paga comprando na hora). Order: maior ordem de compra. Em destaque, a cidade que a conta usa. O ponto verde marca preço ao vivo; preço com mais de 1 hora fica apagado.</p>
+    <div class="tablewrap"><table class="ct"><thead><tr><th scope="col">Item</th>${CITIES.map(c => `<th scope="col">${esc(c)}</th>`).join('')}</tr></thead>
+    <tbody>${rec.ing.map(g => row(g.id, st.buyCity)).join('')}
+      <tr class="sep"><td colspan="${CITIES.length + 1}">Você vende</td></tr>
+      ${row(rec.product, st.sellCity)}</tbody></table></div>`;
 }
 function renderLedger() {
   const rec = curRec(), st = cur(), el = $('#ledger');
@@ -955,7 +960,6 @@ function renderLedger() {
     : `<p>Sem foco. Com foco o retorno iria para ${pct(bonusParts(st, catOf(), true).rrr)} e o lucro subiria <b>${signed(r.gain / out)}</b> por ${unit}${r.focusPer > 0 ? ` (${NF2.format(fp)} prata por ponto de foco)` : ''}.</p>`}</div>`;
   el.innerHTML = `<div class="card">
     <p class="eyebrow">${esc(nm(rec.product))} · ${tierTag(rec.product)} ${esc(TIER_NAME[tierOf(rec.product)] || '')}</p>
-    ${marketTable(rec, st)}
     ${hero}
     <p class="rrr-line"><b>${pct(r.B.rrr)}</b> de retorno de recursos · ${bonusText(r.B)}</p>
     ${bk}${buy}${focus}</div>`;
@@ -1016,6 +1020,7 @@ function update() {
   const qh = $('#qty-hint');
   if (qh && rec) qh.textContent = rec.out > 1 ? `= ${NF0.format(Math.max(0, Math.floor(Number(st.qty) || 0)) * rec.out)} poções` : '';
   const r = renderLedger();
+  renderCities();
   renderCompare();
   renderDock(r);
   updateMarketHints();
