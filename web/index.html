@@ -652,7 +652,7 @@ function agoShort(t) {
 const DEFAULTS = {
   tab: 'ref', server: 'west', premium: true, theme: 'light', lang: 'pt',
   ref: { fam: 'WOOD', tier: 4, ench: 0, loc: 'Fort Sterling', manualBonus: 0, focus: true, daily: 0, qty: 100, fee: 500,
-         buyMode: 'instant', sellMode: 'order', buyCity: 'Fort Sterling', sellCity: 'Fort Sterling', focusCost: {} },
+         buyMode: 'instant', sellMode: 'order', buyCity: 'Fort Sterling', buyCity2: 'Fort Sterling', sellCity: 'Fort Sterling', focusCost: {} },
   pot: { id: 'T4_POTION_HEAL', ench: 0, loc: 'Brecilien', manualBonus: 0, focus: false, daily: 0, qty: 10, fee: 500,
          buyMode: 'instant', sellMode: 'order', buyCity: 'Brecilien', sellCity: 'Brecilien', focusCost: {} },
   specs: {
@@ -695,6 +695,8 @@ for (const st of [S.ref, S.pot]) {
   if (!CITIES.includes(st.buyCity)) st.buyCity = 'Fort Sterling';
   if (!CITIES.includes(st.sellCity)) st.sellCity = 'Fort Sterling';
 }
+// Ajustes antigos não tinham a cidade do refinado: começa igual à da matéria-prima.
+if (!(saved && saved.S && saved.S.ref && saved.S.ref.buyCity2) || !CITIES.includes(S.ref.buyCity2)) S.ref.buyCity2 = S.ref.buyCity;
 
 function api(method, url, body) {
   return fetch(url, {
@@ -734,9 +736,19 @@ function bookSide(id, city, useOffers) {
   const e = (BOOK[S.server] || {})[id + '|' + city];
   return e ? (useOffers ? e.o : e.r) : null;
 }
+// No refino, a matéria-prima (ex.: pelego) e o refinado do tier anterior (ex.:
+// couro) podem ser comprados em cidades diferentes.
+const outBase = fam => DATA.F[fam].r['2.0'][0].replace(/^T\d_/, '');
+const isRefinedIng = id => id.replace(/^T\d_/, '').startsWith(outBase(S.ref.fam));
+function cityFor(id, role, st) {
+  st = st || cur();
+  if (role !== 'buy') return st.sellCity;
+  if (st === S.ref && isRefinedIng(id)) return st.buyCity2 || st.buyCity;
+  return st.buyCity;
+}
 function priceOf(id, role, st) {
   st = st || cur();
-  const city = role === 'buy' ? st.buyCity : st.sellCity;
+  const city = cityFor(id, role, st);
   const key = id + '|' + ck(city) + '|' + role;
   if (MAN[key] != null) return { v: MAN[key], src: 'man', key };
   const useOffers = role === 'buy' ? st.buyMode === 'instant' : st.sellMode === 'order';
@@ -746,7 +758,7 @@ function priceOf(id, role, st) {
 }
 const isFresh = p => !!p && (p.src === 'man' || ((p.src === 'live' || p.src === 'api') && Date.now() - p.at < FRESH_MS));
 function bookFallback(id, role, st) {
-  const city = role === 'buy' ? st.buyCity : st.sellCity;
+  const city = cityFor(id, role, st);
   const useOffers = role === 'buy' ? st.buyMode === 'instant' : st.sellMode === 'order';
   const side = bookSide(id, city, useOffers);
   if (!side || !(side.p > 0)) return '';
@@ -904,12 +916,19 @@ function howSection() {
     <p class="rrr-line" id="rrr-line"></p>`)}
   </section>`;
 }
+function buyCityFields(st) {
+  if (calcTab() !== 'ref') return `<label class="fld"><span class="lbl">${T('Comprar materiais em', 'Buy materials in')}</span><select id="f-buycity" data-k="buyCity">${cityOptions(st.buyCity)}</select></label>`;
+  const f = FAM[S.ref.fam], rec = curRec();
+  const refIng = rec && rec.ing.find(g => isRefinedIng(g.id));
+  return `<label class="fld"><span class="lbl">${T(`Comprar ${f.label} em`, `Buy ${f.label} in`)}</span><select id="f-buycity" data-k="buyCity">${cityOptions(st.buyCity)}</select></label>
+      ${refIng ? `<label class="fld"><span class="lbl">${T(`Comprar ${f.out} ${tierTag(refIng.id)} em`, `Buy ${f.out} ${tierTag(refIng.id)} in`)}</span><select id="f-buycity2" data-k="buyCity2">${cityOptions(st.buyCity2)}</select></label>` : ''}`;
+}
 function marketSection() {
   const st = cur();
   return `<section class="panel" aria-label="${T('Mercado', 'Market')}">${panelHtml(T('Mercado', 'Market'), `
     <div class="here" id="here" hidden></div>
     <div class="row">
-      <label class="fld"><span class="lbl">${T('Comprar materiais em', 'Buy materials in')}</span><select id="f-buycity" data-k="buyCity">${cityOptions(st.buyCity)}</select></label>
+      ${buyCityFields(st)}
       <label class="fld"><span class="lbl">${T('Vender em', 'Sell in')}</span><select id="f-sellcity" data-k="sellCity">${cityOptions(st.sellCity)}</select></label>
     </div>
     <div class="row">
@@ -934,9 +953,13 @@ function priceRows() {
   const lowSell = T('menor ordem de venda', 'lowest sell order'), highBuy = T('maior ordem de compra', 'highest buy order');
   const modeBuy = st.buyMode === 'instant' ? lowSell : highBuy;
   const modeSell = st.sellMode === 'order' ? lowSell : highBuy;
+  const refIng = calcTab() === 'ref' && rec.ing.find(g => isRefinedIng(g.id));
+  const mats = refIng && st.buyCity2 !== st.buyCity
+    ? `${FAM[S.ref.fam].label}: ${esc(st.buyCity)}; ${FAM[S.ref.fam].out}: ${esc(st.buyCity2)}`
+    : esc(st.buyCity);
   return `<p class="src-note">${EN
-    ? `Materials: ${esc(st.buyCity)}, ${modeBuy}. Product: ${esc(st.sellCity)}, ${modeSell}. To lock a price, type it (accepts 1,250, 1.2k or 1.5m).`
-    : `Materiais: ${esc(st.buyCity)}, ${modeBuy}. Produto: ${esc(st.sellCity)}, ${modeSell}. Para fixar um preço, digite (aceita 1.250, 1,2k ou 1,5kk).`}</p>
+    ? `Materials: ${mats}, ${modeBuy}. Product: ${esc(st.sellCity)}, ${modeSell}. To lock a price, type it (accepts 1,250, 1.2k or 1.5m).`
+    : `Materiais: ${mats}, ${modeBuy}. Produto: ${esc(st.sellCity)}, ${modeSell}. Para fixar um preço, digite (aceita 1.250, 1,2k ou 1,5kk).`}</p>
     <div class="phead" aria-hidden="true"><span>${T('Material', 'Material')}</span><span>${T('Qtd.', 'Qty')}</span><span>${T('Preço unitário', 'Unit price')}</span><span>${T('Subtotal', 'Subtotal')}</span></div>
     ${rec.ing.map(g => priceRow(g.id, 'buy', g.q, st)).join('')}
     <div class="psep">${T('Você vende', 'You sell')}</div>
@@ -957,7 +980,7 @@ function badgeHtml(p, id, role, st) {
 }
 function priceRow(id, role, q, st) {
   const p = priceOf(id, role, st);
-  const city = role === 'buy' ? st.buyCity : st.sellCity;
+  const city = cityFor(id, role, st);
   const key = id + '|' + ck(city) + '|' + role;
   const e = enchOf(id), tag = tierTag(id);
   const val = p && p.v != null ? fmtIn(p.v) : '';
@@ -1012,8 +1035,9 @@ function updateMarketHints() {
   const hereEl = $('#here'), todoEl = $('#todo');
   if (!hereEl || !todoEl) return;
   const here = hereCity();
-  if (here && (st.buyCity !== here || st.sellCity !== here)) {
-    const used = esc(st.buyCity === st.sellCity ? st.buyCity : st.buyCity + T(' e ', ' and ') + st.sellCity);
+  const usedCities = [...new Set([st.buyCity, ...(calcTab() === 'ref' ? [st.buyCity2] : []), st.sellCity])];
+  if (here && usedCities.some(c => c !== here)) {
+    const used = esc(usedCities.length > 1 ? usedCities.slice(0, -1).join(', ') + T(' e ', ' and ') + usedCities[usedCities.length - 1] : usedCities[0]);
     hereEl.innerHTML = EN
       ? `<span>You are in <b>${esc(here)}</b>. The math uses ${used}.</span><button type="button" class="linkbtn" data-here="${esc(here)}">Buy and sell in ${esc(here)}</button>`
       : `<span>Você está em <b>${esc(here)}</b>. A conta usa ${used}.</span><button type="button" class="linkbtn" data-here="${esc(here)}">Comprar e vender em ${esc(here)}</button>`;
@@ -1021,7 +1045,7 @@ function updateMarketHints() {
   } else hereEl.hidden = true;
   if (!rec) { todoEl.hidden = true; return; }
   const need = [];
-  for (const g of rec.ing) { const p = priceOf(g.id, 'buy', st); if (!isFresh(p)) need.push({ id: g.id, city: st.buyCity, p }); }
+  for (const g of rec.ing) { const p = priceOf(g.id, 'buy', st); if (!isFresh(p)) need.push({ id: g.id, city: cityFor(g.id, 'buy', st), p }); }
   const pp = priceOf(rec.product, 'sell', st);
   if (!isFresh(pp)) need.push({ id: rec.product, city: st.sellCity, p: pp });
   if (!need.length) { todoEl.hidden = true; return; }
@@ -1058,7 +1082,7 @@ function renderCities() {
   el.innerHTML = panelHtml(T('Preços em todas as cidades', 'Prices in every city'), `<p class="tbl-note">${T('Insta: menor ordem de venda (o que você paga comprando na hora). Order: maior ordem de compra. Em destaque, a cidade que a conta usa. O ponto verde marca preço ao vivo; preço com mais de 1 hora fica apagado.',
       'Insta: lowest sell order (what you pay buying instantly). Order: highest buy order. Highlighted: the city used in the math. The green dot marks a live price; prices older than 1 hour are dimmed.')}</p>
     <div class="tablewrap"><table class="ct"><thead><tr><th scope="col">Item</th>${CITIES.map(c => `<th scope="col">${esc(c)}</th>`).join('')}</tr></thead>
-    <tbody>${rec.ing.map(g => row(g.id, st.buyCity)).join('')}
+    <tbody>${rec.ing.map(g => row(g.id, cityFor(g.id, 'buy', st))).join('')}
       <tr class="sep"><td colspan="${CITIES.length + 1}">${T('Você vende', 'You sell')}</td></tr>
       ${row(rec.product, st.sellCity)}</tbody></table></div>`, '', true);
 }
@@ -1351,7 +1375,7 @@ async function doFetch(quiet) {
   if (btn) btn.setAttribute('aria-busy', 'true');
   setFetchStatus(T('Buscando na API…', 'Fetching from API…'));
   try {
-    const res = await api('POST', '/api/aodp', { server: S.server, ids: fetchIds(), cities: [...new Set([st.buyCity, st.sellCity])] });
+    const res = await api('POST', '/api/aodp', { server: S.server, ids: fetchIds(), cities: [...new Set([st.buyCity, ...(calcTab() === 'ref' ? [st.buyCity2] : []), st.sellCity])] });
     if (res.err) setFetchStatus(T('A API falhou: ', 'The API failed: ') + res.err, 'warn');
     else setFetchStatus(res.n ? (EN ? `${NF0.format(res.n)} API prices checked (${SERVERS[S.server]}). Newer live prices still win.` : `${NF0.format(res.n)} preços da API conferidos (${SERVERS[S.server]}). Preços ao vivo mais novos continuam valendo.`)
       : T('A API não tem ofertas desses itens nessas cidades.', 'The API has no orders for these items in these cities.'), res.n ? 'ok' : 'warn');
@@ -1367,7 +1391,7 @@ function autoFetchIfNeeded() {
   if (S.tab === 'cap') return;
   const st = cur(), rec = curRec(); if (!rec) return;
   const scope = calcTab() === 'ref' ? 'ref:' + S.ref.fam : 'pot:' + POTS[S.pot.id].type;
-  const k = S.server + '|' + scope + '|' + st.buyCity + '|' + st.sellCity;
+  const k = S.server + '|' + scope + '|' + st.buyCity + '|' + (calcTab() === 'ref' ? st.buyCity2 : '') + '|' + st.sellCity;
   if (autoMemo[k] && Date.now() - autoMemo[k] < 10 * 60e3) return;
   const needs = rec.ing.map(g => priceOf(g.id, 'buy', st)).concat([priceOf(rec.product, 'sell', st)]);
   if (needs.every(isFresh)) return;
@@ -1445,7 +1469,7 @@ function onChip(group, v) {
   if (group === 'fam') {
     const prev = FAM[S.ref.fam].city, next = FAM[v].city;
     S.ref.fam = v;
-    for (const k of ['loc', 'buyCity', 'sellCity']) if (S.ref[k] === prev) S.ref[k] = next;
+    for (const k of ['loc', 'buyCity', 'buyCity2', 'sellCity']) if (S.ref[k] === prev) S.ref[k] = next;
     if (!refRec(v, S.ref.tier, S.ref.ench)) S.ref.ench = 0;
   } else if (group === 'tier') {
     S.ref.tier = Number(v);
@@ -1481,7 +1505,7 @@ function onField(t) {
   else if (k === 'qty') st.qty = Math.floor(parseNum(t.value) || 0);
   else if (k === 'fee') st.fee = parseNum(t.value) || 0;
   else if (k === 'focusCost') { if (!rec) return; const v = parseNum(t.value); if (v == null) delete st.focusCost[rec.product]; else st.focusCost[rec.product] = v; }
-  else if (k === 'buyCity' || k === 'sellCity') { st[k] = t.value; renderPrices(); autoFetchIfNeeded(); }
+  else if (k === 'buyCity' || k === 'buyCity2' || k === 'sellCity') { st[k] = t.value; renderPrices(); autoFetchIfNeeded(); }
   else if (k === 'potion') {
     S.pot.id = t.value;
     if (!potRec(S.pot.id, S.pot.ench)) S.pot.ench = 0;
@@ -1502,6 +1526,7 @@ document.addEventListener('click', e => {
   if (b.dataset.copyEl) { const el = document.getElementById(b.dataset.copyEl); if (el) copyText(el.textContent); return; }
   if (b.dataset.here) {
     const st = cur(); st.buyCity = b.dataset.here; st.sellCity = b.dataset.here;
+    if (st === S.ref) st.buyCity2 = b.dataset.here;
     renderForm(); update(); save(); autoFetchIfNeeded(); return;
   }
   if (b.dataset.server) { S.server = b.dataset.server; renderAll(); save(); return; }
