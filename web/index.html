@@ -498,7 +498,7 @@ dialog#specs::backdrop{background:rgba(12,12,14,.45)}
           <p data-en="&lt;b&gt;Resource return&lt;/b&gt; = bonus ÷ (1 + bonus). The bonus adds 18% in any city (0% on islands), +40% in the city with that refining bonus, +15% for potions in Brecilien, +59% with focus and the daily bonus (+10% or +20%) when it applies to the category."><b>Retorno de recursos</b> = bônus ÷ (1 + bônus). O bônus soma 18% em qualquer cidade (0% em ilha), +40% na cidade com bônus daquele refino, +15% para poções em Brecilien, +59% com foco e o bônus diário (+10% ou +20%) quando ele vale para a categoria.</p>
           <p data-en="&lt;b&gt;Station fee&lt;/b&gt; ≈ item value × 0.1125 × (fee per 100 nutrition ÷ 100). The item value comes from the game files; you see the fee at the station itself."><b>Taxa da estação</b> ≈ valor do item × 0,1125 × (taxa por 100 de nutrição ÷ 100). O valor do item vem dos arquivos do jogo; a taxa você vê na própria estação.</p>
           <p data-en="&lt;b&gt;Market&lt;/b&gt;: a sell order pays 2.5% listing fee and, when it sells, the tax (4% with premium, 8% without). Selling instantly to a buy order pays only the tax. A buy order also pays 2.5%."><b>Mercado</b>: ordem de venda paga 2,5% de anúncio e, ao vender, o imposto (4% com premium, 8% sem). Vender na hora para uma ordem de compra paga só o imposto. Ordem de compra também paga 2,5%.</p>
-          <p data-en="&lt;b&gt;Averages&lt;/b&gt;: the return is an average; over few crafts the real result varies. The amount to buy already discounts what comes back, refining again with the returned material."><b>Médias</b>: o retorno é uma média; em poucos crafts o resultado real varia. A quantidade para comprar já desconta o que volta, refinando de novo com o material devolvido.</p>
+          <p data-en="&lt;b&gt;Quantity&lt;/b&gt;: you enter the crafts that the bought materials cover. What comes back is crafted again until it runs out, which on average gives crafts ÷ (1 − return) in total. Totals for profit, focus, fee and output use that number. Items that never come back (rare parts) are bought for every craft. The return is an average; over few crafts the real result varies."><b>Quantidade</b>: você informa os crafts que o material comprado cobre. O que volta é craftado de novo até acabar, o que dá em média crafts ÷ (1 − retorno) no total. Lucro, foco, taxa e itens recebidos no total usam esse número. Itens que nunca voltam (partes raras) são comprados para todos os crafts. O retorno é uma média; em poucos crafts o resultado real varia.</p>
           <p data-en="&lt;b&gt;SPF&lt;/b&gt; (silver per focus) = extra profit from focus ÷ focus spent. &lt;b&gt;Transmutation&lt;/b&gt; uses the silver cost of each step from the game files plus the station fee, with no return. &lt;b&gt;Heart recipe&lt;/b&gt;: from T4 to T8 (up to .3), one raw resource is swapped for the heart of that resource. &lt;b&gt;Sold per day&lt;/b&gt; comes from the AODP API history (7-day average)."><b>SPF</b> (prata por foco) = lucro extra do foco ÷ foco gasto. <b>Transmutação</b> usa o custo em prata de cada passo dos arquivos do jogo mais a taxa da estação, sem retorno. <b>Receita com coração</b>: de T4 a T8 (até o .3), troca um recurso bruto pelo coração daquele recurso. <b>Venda por dia</b> vem do histórico da API do AODP (média de 7 dias).</p>
           <p data-en="&lt;b&gt;Recipes, base focus and item values&lt;/b&gt; were extracted from the game files (ao-bin-dumps) in October 2026, with English and Portuguese client names."><b>Receitas, foco base e valores de item</b> foram extraídos dos arquivos do jogo (ao-bin-dumps) em outubro de 2026, com os nomes do cliente em português.</p>
         </div>
@@ -868,6 +868,12 @@ function compute(rec, st, cat) {
            margin: cost > 0 ? profit / cost : null, missing, ok: missing.length === 0, focusPer, gain, taxRate, setupSell, setupBuy, live };
 }
 
+// Fluxo de craft: o material comprado dá para `qty` crafts e o que volta é
+// craftado de novo até acabar. Em média isso dá qty ÷ (1 − retorno) crafts.
+// Itens que não voltam (partes raras) são comprados para todos esses crafts.
+function totalCrafts(qty, rrr) { return rrr > 0 && rrr < 1 ? Math.floor(qty / (1 - rrr) + 1e-9) : qty; }
+const qtyOf = st => Math.max(0, Math.floor(Number(st.qty) || 0));
+
 /* ---------- onde estou ---------- */
 function hereCity() {
   const s = STATUS || {}, now = Date.now();
@@ -932,7 +938,7 @@ function howSection() {
       <label class="fld" id="manual-wrap"${st.loc === 'manual' ? '' : ' hidden'}><span class="lbl">${T('Bônus do local, sem foco (%)', 'Location bonus, without focus (%)')}</span>
         <input id="f-manual" data-k="manualBonus" inputmode="decimal" autocomplete="off" value="${esc(fmtIn(Number(st.manualBonus) || 0))}">
         <span class="hint">${T('A janela de criação mostra o “bônus de produção local”.', 'The crafting window shows the “local production bonus”.')}</span></label>
-      <label class="fld"><span class="lbl">${isRef ? T('Quantidade de refinos', 'Number of refines') : T('Quantidade de crafts', 'Number of crafts')}</span>
+      <label class="fld"><span class="lbl">${isRef ? T('Refinos com o material comprado', 'Refines with the bought materials') : T('Crafts com o material comprado', 'Crafts with the bought materials')}</span>
         <input id="f-qty" data-k="qty" inputmode="numeric" autocomplete="off" value="${esc(NF0.format(Number(st.qty) || 0))}">
         <span class="hint" id="qty-hint"></span></label>
     </div>
@@ -1172,7 +1178,7 @@ function renderLedger() {
   if (!rec) { el.innerHTML = `<div class="panel">${panelHtml(T('Conta', 'Breakdown'), `<p class="muted">${T('Essa combinação não existe no jogo.', 'This combination does not exist in the game.')}</p>`)}</div>`; return null; }
   const r = compute(rec, st, catOf());
   const unit = unitOf(), out = rec.out;
-  const qty = Math.max(0, Math.floor(Number(st.qty) || 0));
+  const qty = qtyOf(st), tot = totalCrafts(qty, r.B.rrr);
   const isRef = calcTab() === 'ref';
   const perCraft = out > 1 ? ` (1 craft = ${out} ${T('poções', 'potions')})` : '';
   const missing = r.ok ? '' : `<div class="missing"><b>${T('Faltam preços para fechar a conta:', 'Missing prices to finish the math:')}</b><ul>${r.missing.map(id => `<li>${esc(nm(id))} ${tierTag(id)}</li>`).join('')}</ul></div>`;
@@ -1190,24 +1196,25 @@ function renderLedger() {
     ${r.ok ? row(T('Lucro', 'Profit'), signed(r.profit), 'total' + (r.profit < -0.0499 ? ' neg' : '')) : ''}
   </tbody></table>`;
   const buyList = rec.ing.map(g => {
-    const need = Math.ceil(qty * g.q * (1 - (g.ret ? r.B.rrr : 0)) - 1e-9);
+    const need = g.ret ? qty * g.q : tot * g.q;
     const p = priceOf(g.id, 'buy', st);
     const thin = p && p.src === 'live' && st.buyMode === 'instant' && p.a > 0 && need > p.a;
     return `<li${thin ? ' class="warnline"' : ''}><span class="ih">${ico(g.id, 22)}${NF0.format(need)}× ${esc(nm(g.id))}</span><span>${p && p.v != null ? '≈ ' + money(need * p.v * (1 + r.setupBuy)) : ''}${thin ? ' · ' + T(`só ${NF0.format(p.a)} un. nesse preço`, `only ${NF0.format(p.a)} pcs at this price`) : ''}</span></li>`;
   }).join('');
   const nUnits = isRef ? T('refinos', 'refines') : 'crafts';
-  const buy = `<div class="block"><h3>${EN ? `For ${NF0.format(qty)} ${nUnits}, buy` : `Para ${NF0.format(qty)} ${nUnits}, compre`}</h3><ul>${buyList}
-    <li><span>${T('Taxa da estação no total', 'Total station fee')}</span><span>≈ ${money(r.fee * qty)}</span></li>
-    <li><span class="ih">${ico(rec.product, 22)}${T('Você recebe', 'You get')} ${NF0.format(qty * out)}× ${esc(nm(rec.product))}</span><span>${r.ok ? T('líquido ≈ ', 'net ≈ ') + money(r.rev * qty) : ''}</span></li></ul></div>`;
+  const buy = `<div class="block"><h3>${EN ? `Buy for ${NF0.format(qty)} ${nUnits}` : `Compre para ${NF0.format(qty)} ${nUnits}`}</h3><ul>${buyList}
+    <li><span>${EN ? `What comes back makes ${NF0.format(tot - qty)} more ${nUnits}` : `O que volta dá mais ${NF0.format(tot - qty)} ${nUnits}`}</span><span>${EN ? `${NF0.format(tot)} in total` : `${NF0.format(tot)} no total`}</span></li>
+    <li><span>${T('Taxa da estação no total', 'Total station fee')}</span><span>≈ ${money(r.fee * tot)}</span></li>
+    <li><span class="ih">${ico(rec.product, 22)}${T('Você recebe', 'You get')} ${NF0.format(tot * out)}× ${esc(nm(rec.product))}</span><span>${r.ok ? T('líquido ≈ ', 'net ≈ ') + money(r.rev * tot) : ''}</span></li></ul></div>`;
   const fp = r.focusPer > 0 ? r.gain / r.focusPer : 0;
   const one = isRef ? T('refino', 'refine') : 'craft';
   const focus = `<div class="block"><h3>${T('Foco', 'Focus')}</h3>${EN
     ? (st.focus
-      ? `<p>${NF0.format(r.focusPer * qty)} focus in total (${NF0.format(r.focusPer)} per ${one}). ${r.focusPer > 0 ? `The 10,000 focus of a premium day cover ${NF0.format(Math.floor(FOCUS_PER_DAY / r.focusPer))} ${nUnits}.` : ''}</p>
+      ? `<p>${NF0.format(r.focusPer * tot)} focus in total (${NF0.format(r.focusPer)} per ${one}). ${r.focusPer > 0 ? `The 10,000 focus of a premium day cover ${NF0.format(Math.floor(FOCUS_PER_DAY / r.focusPer))} ${nUnits}.` : ''}</p>
          <p>Focus is earning <b>${signed(r.gain / out)}</b> per ${unit}${r.focusPer > 0 ? `, or <b>${NF2.format(fp)}</b> silver per focus point` : ''}.</p>`
       : `<p>No focus. With focus the return would go to ${pct(bonusParts(st, catOf(), true).rrr)} and profit would rise <b>${signed(r.gain / out)}</b> per ${unit}${r.focusPer > 0 ? ` (${NF2.format(fp)} silver per focus point)` : ''}.</p>`)
     : (st.focus
-      ? `<p>${NF0.format(r.focusPer * qty)} de foco no total (${NF0.format(r.focusPer)} por ${one}). ${r.focusPer > 0 ? `Os 10.000 de foco de um dia de premium dão para ${NF0.format(Math.floor(FOCUS_PER_DAY / r.focusPer))} ${nUnits}.` : ''}</p>
+      ? `<p>${NF0.format(r.focusPer * tot)} de foco no total (${NF0.format(r.focusPer)} por ${one}). ${r.focusPer > 0 ? `Os 10.000 de foco de um dia de premium dão para ${NF0.format(Math.floor(FOCUS_PER_DAY / r.focusPer))} ${nUnits}.` : ''}</p>
          <p>O foco está rendendo <b>${signed(r.gain / out)}</b> por ${unit}${r.focusPer > 0 ? `, ou <b>${NF2.format(fp)}</b> prata por ponto de foco` : ''}.</p>`
       : `<p>Sem foco. Com foco o retorno iria para ${pct(bonusParts(st, catOf(), true).rrr)} e o lucro subiria <b>${signed(r.gain / out)}</b> por ${unit}${r.focusPer > 0 ? ` (${NF2.format(fp)} prata por ponto de foco)` : ''}.</p>`)}</div>`;
   el.innerHTML = `<div class="panel">${panelHtml(isRef ? T('Conta do refino', 'Refine breakdown') : T('Conta do craft', 'Craft breakdown'),
@@ -1253,7 +1260,7 @@ function renderKpis(r) {
   const el = $('#kpis'), rec = curRec(), st = cur();
   if (!rec || !r) { el.innerHTML = ''; return; }
   const unit = unitOf(), out = rec.out, isRef = calcTab() === 'ref';
-  const qty = Math.max(0, Math.floor(Number(st.qty) || 0));
+  const tot = totalCrafts(qtyOf(st), r.B.rrr);
   const cls = v => (v > 0.0499 ? 'pos' : v < -0.0499 ? 'neg' : '');
   const kpi = (label, value, vcls, u, extra, fl, fr, frcls) => `<div class="kpi"><div class="kpi-in"><span class="kpi-l">${label}</span>
     <div class="kpi-row"><b class="kpi-v ${vcls || ''}">${value}</b>${u ? `<span class="kpi-u">${u}</span>` : ''}${extra || ''}</div></div>
@@ -1266,10 +1273,10 @@ function renderKpis(r) {
     kpi(`${T('Lucro por', 'Profit per')} ${unit}`, r.ok ? signed(r.profit / out) : '—', r.ok ? cls(r.profit) : '', silver, sparkHtml(),
       r.ok ? T('Margem', 'Margin') : T('Faltam preços', 'Missing prices'), r.ok ? (r.margin != null ? pct(r.margin) : '—') : `${r.missing.length} ${r.missing.length === 1 ? 'item' : T('itens', 'items')}`,
       r.ok ? cls(r.profit) : 'warn'),
-    kpi(EN ? `Profit on ${NF0.format(qty)} ${nUnits}` : `Lucro em ${NF0.format(qty)} ${nUnits}`, r.ok ? kk(r.profit * qty) : '—', r.ok ? cls(r.profit) : '', silver, '',
-      T('Receita líquida', 'Net revenue'), r.ok ? '≈ ' + money(r.rev * qty) : '—'),
+    kpi(EN ? `Profit on ${NF0.format(tot)} ${nUnits}` : `Lucro em ${NF0.format(tot)} ${nUnits}`, r.ok ? kk(r.profit * tot) : '—', r.ok ? cls(r.profit) : '', silver, '',
+      T('Receita líquida', 'Net revenue'), r.ok ? '≈ ' + money(r.rev * tot) : '—'),
     kpi(T('Retorno de recursos', 'Resource return'), pct(r.B.rrr), '', '', '',
-      st.focus ? T('Com foco', 'With focus') : T('Sem foco', 'No focus'), st.focus ? `${NF0.format(r.focusPer * qty)} ${T('de foco', 'focus')}` : `${T('com foco', 'with focus')}: ${pct(withFocus)}`),
+      st.focus ? T('Com foco', 'With focus') : T('Sem foco', 'No focus'), st.focus ? `${NF0.format(r.focusPer * tot)} ${T('de foco', 'focus')}` : `${T('com foco', 'with focus')}: ${pct(withFocus)}`),
     kpi(T('Preços ao vivo', 'Live prices'), `${r.live}/${total}`, r.live === total ? 'pos' : '', '', '',
       stale ? T('Pesquise no mercado', 'Search the market') : T('Tudo atualizado', 'All up to date'), stale ? `${stale} ${stale === 1 ? T('preço', 'price') : T('preços', 'prices')}` : T('menos de 1 h', 'under 1 h'), stale ? 'warn' : 'pos'),
   ].join('');
@@ -1395,11 +1402,11 @@ function renderTransmute(tabs) {
 function renderDock(r) {
   const el = $('#dock'), rec = curRec(), st = cur();
   if (!rec) { el.innerHTML = ''; return; }
-  const qty = Math.max(0, Math.floor(Number(st.qty) || 0));
   if (!r || !r.ok) { el.innerHTML = `<div><span class="d-lbl">${T('Resultado', 'Result')}</span><b>${T('Faltam preços', 'Missing prices')}</b></div><button type="button" id="dock-go">${T('Ver conta', 'See math')}</button>`; return; }
   const c = r.profit > 0.0499 ? 'pos' : r.profit < -0.0499 ? 'neg' : '';
+  const tot = totalCrafts(qtyOf(st), r.B.rrr);
   el.innerHTML = `<div><span class="d-lbl">${T('Por', 'Per')} ${unitOf()}</span><b class="${c}">${signed(r.profit / rec.out)}</b></div>
-    <div><span class="d-lbl">${NF0.format(qty)} ${calcTab() === 'ref' ? T('refinos', 'refines') : 'crafts'}</span><b class="${c}">${kk(r.profit * qty)}</b></div>
+    <div><span class="d-lbl">${NF0.format(tot)} ${calcTab() === 'ref' ? T('refinos', 'refines') : 'crafts'}</span><b class="${c}">${kk(r.profit * tot)}</b></div>
     <div><span class="d-lbl">${T('Retorno', 'Return')}</span><b>${pct(r.B.rrr)}</b></div>
     <button type="button" id="dock-go">${T('Ver conta', 'See math')}</button>`;
 }
@@ -1411,7 +1418,11 @@ function update() {
   const fh = $('#fee-hint');
   if (fh && rec) fh.textContent = EN ? `Silver per 100 nutrition. Here that is ≈ ${money(rec.iv * NUTRITION * (Number(st.fee) || 0) / 100)} per ${unitOf()}.` : `Prata por 100 de nutrição. Aqui dá ≈ ${money(rec.iv * NUTRITION * (Number(st.fee) || 0) / 100)} por ${unitOf()}.`;
   const qh = $('#qty-hint');
-  if (qh && rec) qh.textContent = rec.out > 1 ? `= ${NF0.format(Math.max(0, Math.floor(Number(st.qty) || 0)) * rec.out)} ${T('poções', 'potions')}` : '';
+  if (qh && rec) {
+    const tot = totalCrafts(qtyOf(st), bonusParts(st, catOf(), st.focus).rrr), many = calcTab() === 'ref' ? T('refinos', 'refines') : 'crafts';
+    qh.textContent = (EN ? `With the return: ${NF0.format(tot)} ${many} in total` : `Com o retorno: ${NF0.format(tot)} ${many} no total`)
+      + (rec.out > 1 ? ` = ${NF0.format(tot * rec.out)} ${T('poções', 'potions')}` : '') + '.';
+  }
   const r = renderLedger();
   stickLedger();
   renderKpis(r);
