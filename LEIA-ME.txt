@@ -18,6 +18,21 @@ COMO USAR
    Clique num item do quadro para copiar o nome e colar na busca do jogo.
 
 
+O QUE TEM NA TELA
+
+- Níveis de refino / Níveis de alquimia (botão no topo): copie os níveis do
+  Destiny Board e o app calcula o foco de cada refino ou poção.
+- Tabela de lucro com abas:
+  SPU = lucro por unidade.
+  SPF = prata por foco (quanto o foco aumenta o lucro, por ponto gasto).
+  Transmutação (refino) = lucro de transmutar o recurso bruto até cada
+  tier/encantamento, pelo caminho mais barato.
+- Receita com coração (refino, em "Preços em prata"): troca 1 recurso bruto
+  pelo coração daquele recurso, de T4 a T8 até o .3.
+- Venda por dia (tabela de cidades, linha "Você vende"): média de 7 dias pela
+  API do Albion Online Data Project. O Data Client não manda vendas.
+
+
 O QUE O APP FAZ COM O DATA CLIENT
 
 - Usa o Albion Data Client oficial que está instalado no PC, sem modificar nada
@@ -51,6 +66,8 @@ ATUALIZAÇÃO
 - Toda vez que abre, o app confere se há versão nova no GitHub
   (github.com/Jvvr-2003/albion-refino/releases). Se houver, ele baixa, troca o
   próprio .exe e reabre já atualizado. Sem internet, abre a versão que já tem.
+- Com o app aberto, ele confere de novo a cada 30 minutos. Para conferir na
+  hora, clique no botão de setas ao lado da versão, no topo da janela.
 
 
 ARQUIVOS

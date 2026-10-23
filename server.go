@@ -158,6 +158,14 @@ func (a *App) routes() http.Handler {
 		go a.applyUpdate()
 		writeJSON(w, map[string]any{"ok": true})
 	})
+	mux.HandleFunc("POST /api/update/check", func(w http.ResponseWriter, r *http.Request) {
+		res := map[string]any{"ok": true}
+		if err := a.checkNow(); err != nil {
+			res = map[string]any{"ok": false, "err": err.Error()}
+		}
+		res["update"] = a.updateStatus()
+		writeJSON(w, res)
+	})
 	mux.HandleFunc("POST /api/open-window", func(w http.ResponseWriter, r *http.Request) {
 		go a.openWindow()
 		writeJSON(w, map[string]any{"ok": true})

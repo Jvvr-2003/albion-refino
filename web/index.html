@@ -225,6 +225,8 @@ input[type="checkbox"]{width:16px;height:16px;padding:0;accent-color:var(--accen
 .phead span:nth-child(2){grid-area:qty}.phead span:nth-child(3){grid-area:pin}.phead span:nth-child(4){grid-area:sub;text-align:right}
 .prow{padding:10px 6px;margin:0 -6px;border-bottom:1px solid var(--line);border-radius:6px}
 .prow.flash{animation:flash 1.4s ease-out}
+.iconbtn[aria-busy="true"] svg{animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 @keyframes flash{0%{background:var(--good-soft)}100%{background:transparent}}
 .pname{grid-area:name;display:flex;align-items:center;gap:10px;min-width:0;font-weight:500}
 .pname .ico{margin:-6px 0}
@@ -357,6 +359,13 @@ dialog#specs::backdrop{background:rgba(12,12,14,.45)}
 .specs-tbl td{padding:6px 8px;border-top:1px solid var(--line)}
 .specs-tbl td:first-child{font-weight:500;white-space:nowrap}
 .specs-tbl input{width:4.6rem;text-align:right;padding:6px 8px;height:34px;font-family:var(--f-mono)}
+.heart-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-bottom:10px}
+.compare .ph{flex-wrap:wrap;gap:8px}
+.specs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.specs-grid label{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:10px}
+.specs-grid label.m{grid-column:1/-1}
+.specs-grid label>span{font-weight:500;min-width:0}
+.specs-grid input{width:4.6rem;flex:none;text-align:right;padding:6px 8px;height:34px;font-family:var(--f-mono)}
 .specs-preview{padding:10px 12px;background:var(--inset);border:1px solid var(--line);border-radius:10px;font-size:13.5px}
 .tablewrap{overflow-x:auto}
 .dock{display:none}
@@ -433,6 +442,9 @@ dialog#specs::backdrop{background:rgba(12,12,14,.45)}
           <button type="button" data-lang="en" aria-pressed="false" title="English">EN</button>
         </div>
         <span class="ver" id="app-ver"></span>
+        <button type="button" class="iconbtn" id="btn-check-upd" aria-label="Verificar atualização" title="Verificar atualização" data-en-aria="Check for update" data-en-title="Check for update">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4.5h-4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
         <button type="button" class="iconbtn" id="btn-theme" aria-label="Trocar tema claro ou escuro" title="Tema claro ou escuro" data-en-aria="Switch light or dark theme" data-en-title="Light or dark theme">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
         </button>
@@ -457,9 +469,9 @@ dialog#specs::backdrop{background:rgba(12,12,14,.45)}
             <button type="button" data-seg="premium" data-v="1" aria-pressed="true">Premium · 4%</button>
             <button type="button" data-seg="premium" data-v="0" aria-pressed="false" data-en="No premium · 8%">Sem premium · 8%</button>
           </div>
-          <button type="button" class="btn" data-open-specs="1">
+          <button type="button" class="btn" id="btn-specs" data-open-specs="1">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="10" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="18" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
-            <span data-en="Refining levels">Níveis de refino</span>
+            <span id="btn-specs-lbl" data-en="Refining levels">Níveis de refino</span>
           </button>
         </div>
       </div>
@@ -487,6 +499,7 @@ dialog#specs::backdrop{background:rgba(12,12,14,.45)}
           <p data-en="&lt;b&gt;Station fee&lt;/b&gt; ≈ item value × 0.1125 × (fee per 100 nutrition ÷ 100). The item value comes from the game files; you see the fee at the station itself."><b>Taxa da estação</b> ≈ valor do item × 0,1125 × (taxa por 100 de nutrição ÷ 100). O valor do item vem dos arquivos do jogo; a taxa você vê na própria estação.</p>
           <p data-en="&lt;b&gt;Market&lt;/b&gt;: a sell order pays 2.5% listing fee and, when it sells, the tax (4% with premium, 8% without). Selling instantly to a buy order pays only the tax. A buy order also pays 2.5%."><b>Mercado</b>: ordem de venda paga 2,5% de anúncio e, ao vender, o imposto (4% com premium, 8% sem). Vender na hora para uma ordem de compra paga só o imposto. Ordem de compra também paga 2,5%.</p>
           <p data-en="&lt;b&gt;Averages&lt;/b&gt;: the return is an average; over few crafts the real result varies. The amount to buy already discounts what comes back, refining again with the returned material."><b>Médias</b>: o retorno é uma média; em poucos crafts o resultado real varia. A quantidade para comprar já desconta o que volta, refinando de novo com o material devolvido.</p>
+          <p data-en="&lt;b&gt;SPF&lt;/b&gt; (silver per focus) = extra profit from focus ÷ focus spent. &lt;b&gt;Transmutation&lt;/b&gt; uses the silver cost of each step from the game files plus the station fee, with no return. &lt;b&gt;Heart recipe&lt;/b&gt;: from T4 to T8 (up to .3), one raw resource is swapped for the heart of that resource. &lt;b&gt;Sold per day&lt;/b&gt; comes from the AODP API history (7-day average)."><b>SPF</b> (prata por foco) = lucro extra do foco ÷ foco gasto. <b>Transmutação</b> usa o custo em prata de cada passo dos arquivos do jogo mais a taxa da estação, sem retorno. <b>Receita com coração</b>: de T4 a T8 (até o .3), troca um recurso bruto pelo coração daquele recurso. <b>Venda por dia</b> vem do histórico da API do AODP (média de 7 dias).</p>
           <p data-en="&lt;b&gt;Recipes, base focus and item values&lt;/b&gt; were extracted from the game files (ao-bin-dumps) in October 2026, with English and Portuguese client names."><b>Receitas, foco base e valores de item</b> foram extraídos dos arquivos do jogo (ao-bin-dumps) em outubro de 2026, com os nomes do cliente em português.</p>
         </div>
       </footer>
@@ -498,11 +511,8 @@ dialog#specs::backdrop{background:rgba(12,12,14,.45)}
   <form method="dialog" class="specs-card">
     <div class="ph"><h2 class="sec" id="specs-title" data-en="Refining levels">Níveis de refino</h2><button type="submit" class="linkbtn" data-en="Close">Fechar</button></div>
     <div class="pb">
-      <p class="muted" data-en="In the Destiny Board, each refining line has 5 nodes: from the first one below the top to the last they are T4, T5, T6, T7 and T8. Copy the level of each (0 to 100). The app works out the focus of every refine by itself.">No Destiny Board, cada linha de refino tem 5 nós: do primeiro abaixo do topo até o último são T4, T5, T6, T7 e T8. Copie o nível de cada um (0 a 100). O app calcula sozinho o foco de cada refino.</p>
-      <div class="tablewrap"><table class="specs-tbl">
-        <thead><tr><th scope="col" data-en="Resource">Recurso</th><th scope="col">T4</th><th scope="col">T5</th><th scope="col">T6</th><th scope="col">T7</th><th scope="col">T8</th></tr></thead>
-        <tbody id="specs-body"></tbody>
-      </table></div>
+      <p class="muted" id="specs-intro"></p>
+      <div id="specs-wrap"></div>
       <p id="specs-preview" class="specs-preview"></p>
       <p class="muted" data-en="Levels do not change the resource return. The return depends on location, focus and daily bonus, and already shows in the math.">Os níveis não mudam o retorno de recursos. O retorno depende do local, do foco e do bônus diário, e já aparece na conta.</p>
       <div class="actions"><button type="submit" class="btn" data-en="Done">Pronto</button></div>
@@ -589,6 +599,8 @@ for (const [id, tier, type, lv] of DATA.P) {
   (POT_BY_TYPE[type] = POT_BY_TYPE[type] || []).push(id);
 }
 for (const t in POT_BY_TYPE) POT_BY_TYPE[t].sort((a, b) => POTS[a].tier - POTS[b].tier);
+// Especializações de alquimia no Destiny Board: uma por tipo de poção e uma do álcool.
+const POT_SPEC_KEYS = POT_TYPES.map(t => t[0]).concat('ALCOHOL');
 const FAM_CAT = { WOOD: 'wood', ORE: 'ore', FIBER: 'fiber', HIDE: 'hide', ROCK: 'rock' };
 
 /* ---------- formatação ---------- */
@@ -650,8 +662,8 @@ function agoShort(t) {
 
 /* ---------- estado ---------- */
 const DEFAULTS = {
-  tab: 'ref', server: 'west', premium: true, theme: 'light', lang: 'pt',
-  ref: { fam: 'WOOD', tier: 4, ench: 0, loc: 'Fort Sterling', manualBonus: 0, focus: true, daily: 0, qty: 100, fee: 500,
+  tab: 'ref', server: 'west', premium: true, theme: 'light', lang: 'pt', cmpView: 'spu',
+  ref: { fam: 'WOOD', tier: 4, ench: 0, heart: false, loc: 'Fort Sterling', manualBonus: 0, focus: true, daily: 0, qty: 100, fee: 500,
          buyMode: 'instant', sellMode: 'order', buyCity: 'Fort Sterling', buyCity2: 'Fort Sterling', sellCity: 'Fort Sterling', focusCost: {} },
   pot: { id: 'T4_POTION_HEAL', ench: 0, loc: 'Brecilien', manualBonus: 0, focus: false, daily: 0, qty: 10, fee: 500,
          buyMode: 'instant', sellMode: 'order', buyCity: 'Brecilien', sellCity: 'Brecilien', focusCost: {} },
@@ -660,6 +672,7 @@ const DEFAULTS = {
     FIBER: { m: 0, t4: 0, t5: 0, t6: 0, t7: 0, t8: 0 }, HIDE: { m: 0, t4: 0, t5: 0, t6: 0, t7: 0, t8: 0 },
     ROCK: { m: 0, t4: 0, t5: 0, t6: 0, t7: 0, t8: 0 },
   },
+  potSpecs: Object.fromEntries([['m', 0], ...POT_SPEC_KEYS.map(k => [k, 0])]),
 };
 function merge(def, sav) {
   if (!sav || typeof sav !== 'object') return def;
@@ -687,6 +700,7 @@ if (!POTS[S.pot.id]) S.pot.id = 'T4_POTION_HEAL';
 if (!potRec(S.pot.id, S.pot.ench)) S.pot.ench = 0;
 if (!SERVERS[S.server]) S.server = 'west';
 if (!['ref', 'pot', 'cap'].includes(S.tab)) S.tab = 'ref';
+if (!['spu', 'spf', 'tr'].includes(S.cmpView)) S.cmpView = 'spu';
 if (S.theme !== 'dark') S.theme = 'light';
 if (S.lang !== 'en') S.lang = 'pt';
 for (const b of document.querySelectorAll('#g-lang button')) b.setAttribute('aria-pressed', b.dataset.lang === S.lang ? 'true' : 'false');
@@ -718,11 +732,23 @@ const catOf = () => (calcTab() === 'ref' ? FAM_CAT[S.ref.fam] : 'potion');
 const unitOf = () => (calcTab() === 'ref' ? FAM[S.ref.fam].unit : T('poção', 'potion'));
 
 /* ---------- receitas ---------- */
+// r[4] é a receita com coração (1 bruto a menos e 1 coração), de T4 a T8 até o .3.
 function refRec(fam, t, e) {
   const r = DATA.F[fam] && DATA.F[fam].r[t + '.' + e];
   if (!r) return null;
-  return { product: r[0], out: 1, focus: r[1], iv: r[2], ing: r[3].map(([id, q]) => ({ id, q, ret: 1 })) };
+  const heart = !!(S.ref.heart && r[4]);
+  return { product: r[0], out: 1, focus: r[1], iv: r[2], heart, ing: (heart ? r[4] : r[3]).map(([id, q]) => ({ id, q, ret: 1 })) };
 }
+function heartOf(fam) {
+  for (const r of Object.values(DATA.F[fam].r)) {
+    const h = r[4] && r[4].find(([id]) => id.startsWith('T1_FACTION_'));
+    if (h) return h[0];
+  }
+  return '';
+}
+// Recurso bruto de um tier.encantamento, ex.: rawId('HIDE', '5.1') = T5_HIDE_LEVEL1@1.
+const rawId = (fam, key) => { const [t, e] = key.split('.'); return `T${t}_${fam}` + (+e ? `_LEVEL${e}@${e}` : ''); };
+const rawKey = id => tierOf(id) + '.' + enchOf(id);
 function potRec(id, e) {
   const p = POTS[id], l = p && p.lv[String(e)];
   if (!l) return null;
@@ -780,8 +806,18 @@ function fceFor(fam, tier) {
   return fce;
 }
 const focusFromFce = (base, fce) => base * Math.pow(0.5, fce / 10000);
+// Alquimia: cada nível do Alquimista (maestria) dá +30 em toda poção. Cada
+// especialização dá +250 na própria poção e +30 em toda poção, como no craft de equipamento.
+const potTypeOf = id => (POTS[String(id).split('@')[0]] || {}).type;
+function potFce(type) {
+  const sp = S.potSpecs || {};
+  let fce = 30 * clampLvl(sp.m);
+  for (const k of POT_SPEC_KEYS) fce += 30 * clampLvl(sp[k]);
+  if (type) fce += 250 * clampLvl(sp[type]);
+  return fce;
+}
 function autoFocus(rec) {
-  if (calcTab() !== 'ref') return rec.focus;
+  if (calcTab() !== 'ref') return Math.round(focusFromFce(rec.focus, potFce(potTypeOf(rec.product))));
   return Math.round(focusFromFce(rec.focus, fceFor(S.ref.fam, tierOf(rec.product))));
 }
 
@@ -888,6 +924,8 @@ function whatSection() {
 function howSection() {
   const st = cur(), cat = catOf(), rec = curRec();
   const isRef = calcTab() === 'ref';
+  const fce = rec ? (isRef ? fceFor(S.ref.fam, tierOf(rec.product)) : potFce(potTypeOf(rec.product))) : 0;
+  const lvBtn = `<button type="button" class="linkbtn" data-open-specs="1">${isRef ? T('Níveis de refino', 'Refining levels') : T('Níveis de alquimia', 'Alchemy levels')}</button>`;
   return `<section class="panel" aria-label="${T('Onde e como', 'Where and how')}">${panelHtml(T('Onde e como', 'Where and how'), `
     <div class="row">
       <label class="fld"><span class="lbl">${isRef ? T('Local do refino', 'Refining location') : T('Local do craft', 'Crafting location')}</span><select id="f-loc" data-k="loc">${locOptions(st, cat)}</select></label>
@@ -908,10 +946,9 @@ function howSection() {
         <span class="hint" id="fee-hint"></span></label>
       <label class="fld"><span class="lbl">${isRef ? T('Foco por refino', 'Focus per refine') : T('Foco por craft', 'Focus per craft')}</span>
         <input id="f-focus" data-k="focusCost" inputmode="numeric" autocomplete="off" placeholder="${rec ? NF0.format(autoFocus(rec)) : ''}" value="${rec && st.focusCost[rec.product] != null ? esc(fmtIn(st.focusCost[rec.product])) : ''}">
-        <span class="hint">${rec ? (isRef
-          ? (EN ? `${NF0.format(autoFocus(rec))} from your levels (base ${NF0.format(rec.focus)}, efficiency ${NF0.format(fceFor(S.ref.fam, tierOf(rec.product)))}). Leave empty to use this value. <button type="button" class="linkbtn" data-open-specs="1">Refining levels</button>`
-            : `${NF0.format(autoFocus(rec))} pelos seus níveis (base ${NF0.format(rec.focus)}, eficiência ${NF0.format(fceFor(S.ref.fam, tierOf(rec.product)))}). Deixe vazio para usar esse valor. <button type="button" class="linkbtn" data-open-specs="1">Níveis de refino</button>`)
-          : T(`Base ${NF0.format(rec.focus)} sem especialização. Digite o valor que o jogo mostra para você.`, `Base ${NF0.format(rec.focus)} without specialization. Type the value the game shows you.`)) : ''}</span></label>
+        <span class="hint">${rec ? (EN
+          ? `${NF0.format(autoFocus(rec))} from your levels (base ${NF0.format(rec.focus)}, efficiency ${NF0.format(fce)}). Leave empty to use this value. ${lvBtn}`
+          : `${NF0.format(autoFocus(rec))} pelos seus níveis (base ${NF0.format(rec.focus)}, eficiência ${NF0.format(fce)}). Deixe vazio para usar esse valor. ${lvBtn}`) : ''}</span></label>
     </div>
     <p class="rrr-line" id="rrr-line"></p>`)}
   </section>`;
@@ -957,13 +994,21 @@ function priceRows() {
   const mats = refIng && st.buyCity2 !== st.buyCity
     ? `${FAM[S.ref.fam].label}: ${esc(st.buyCity)}; ${FAM[S.ref.fam].out}: ${esc(st.buyCity2)}`
     : esc(st.buyCity);
-  return `<p class="src-note">${EN
+  return `${calcTab() === 'ref' ? heartBar(rec) : ''}<p class="src-note">${EN
     ? `Materials: ${mats}, ${modeBuy}. Product: ${esc(st.sellCity)}, ${modeSell}. To lock a price, type it (accepts 1,250, 1.2k or 1.5m).`
     : `Materiais: ${mats}, ${modeBuy}. Produto: ${esc(st.sellCity)}, ${modeSell}. Para fixar um preço, digite (aceita 1.250, 1,2k ou 1,5kk).`}</p>
     <div class="phead" aria-hidden="true"><span>${T('Material', 'Material')}</span><span>${T('Qtd.', 'Qty')}</span><span>${T('Preço unitário', 'Unit price')}</span><span>${T('Subtotal', 'Subtotal')}</span></div>
     ${rec.ing.map(g => priceRow(g.id, 'buy', g.q, st)).join('')}
     <div class="psep">${T('Você vende', 'You sell')}</div>
     ${priceRow(rec.product, 'sell', rec.out, st)}`;
+}
+// Troca entre a receita normal e a com coração (Coração Arbóreo na madeira etc.).
+function heartBar(rec) {
+  const h = heartOf(S.ref.fam);
+  if (!h) return '';
+  const note = S.ref.heart && !rec.heart
+    ? `<span class="hint">${T(`${tierTag(rec.product)} não tem receita com coração; a conta usa a normal.`, `${tierTag(rec.product)} has no heart recipe; the math uses the normal one.`)}</span>` : '';
+  return `<div class="heart-bar"><span class="lbl">${T('Receita', 'Recipe')}</span>${seg('heart', [[false, 'Normal'], [true, `${T('Com', 'With')} ${nm(h)}`]], S.ref.heart, T('Receita', 'Recipe'))}${note}</div>`;
 }
 function badgeHtml(p, id, role, st) {
   if (!p) return `<span class="b none">${T('sem preço · pesquise no mercado', 'no price · search the market')}</span>`;
@@ -1021,6 +1066,7 @@ function renderTabs() {
     pot: ['Poções', 'Lucro de poções com preços ao vivo, retorno, foco e taxas.'],
     cap: ['Captura', 'Ligação com o Albion Data Client, que manda os preços para o app.'] })[S.tab];
   $('#page-title').textContent = page[0]; $('#crumb-cur').textContent = page[0]; $('#page-sub').textContent = page[1];
+  $('#btn-specs-lbl').textContent = S.tab === 'pot' ? T('Níveis de alquimia', 'Alchemy levels') : T('Níveis de refino', 'Refining levels');
   $('#g-server').value = S.server;
   for (const b of document.querySelectorAll('#g-premium button')) b.setAttribute('aria-pressed', (b.dataset.v === '1') === S.premium ? 'true' : 'false');
   $('#calc').hidden = S.tab === 'cap';
@@ -1077,14 +1123,49 @@ function renderCities() {
     const when = live ? T('ao vivo ', 'live ') + agoShort(side.t) : 'API ' + ago(side.t);
     return `<div class="cl${old ? ' old' : ''}" title="${esc(when)}"><span>${label}</span><b>${money(side.p)}${live ? '<i class="lv"></i>' : ''}</b></div>`;
   };
-  const row = (id, useCity) => `<tr><th scope="row"><span class="ih">${ico(id, 34)}<span>${esc(nm(id))}<small>${tierTag(id)}</small></span></span></th>${CITIES.map(c =>
-    `<td class="${c === useCity ? 'use' : ''}">${line(bookSide(id, c, true), 'insta')}${line(bookSide(id, c, false), 'order')}</td>`).join('')}</tr>`;
+  const hist = histFor(rec.product);
+  const salesTip = T('Média de unidades vendidas por dia nos últimos 7 dias, pelo histórico da API do AODP. O Data Client não manda vendas, só as ordens.',
+    'Average units sold per day over the last 7 days, from the AODP API history. The Data Client does not send sales, only orders.');
+  const sales = c => {
+    const v = hist && hist.byCity[ck(c)];
+    return `<div class="cl" title="${esc(salesTip)}"><span>${T('venda/dia', 'sold/day')}</span><b class="${v == null ? 'muted' : ''}">${!hist ? '…' : v == null ? '—' : NF0.format(v)}</b></div>`;
+  };
+  const row = (id, useCity, withSales) => `<tr><th scope="row"><span class="ih">${ico(id, 34)}<span>${esc(nm(id))}<small>${tierTag(id)}</small></span></span></th>${CITIES.map(c =>
+    `<td class="${c === useCity ? 'use' : ''}">${line(bookSide(id, c, true), 'insta')}${line(bookSide(id, c, false), 'order')}${withSales ? sales(c) : ''}</td>`).join('')}</tr>`;
   el.innerHTML = panelHtml(T('Preços em todas as cidades', 'Prices in every city'), `<p class="tbl-note">${T('Insta: menor ordem de venda (o que você paga comprando na hora). Order: maior ordem de compra. Em destaque, a cidade que a conta usa. O ponto verde marca preço ao vivo; preço com mais de 1 hora fica apagado.',
       'Insta: lowest sell order (what you pay buying instantly). Order: highest buy order. Highlighted: the city used in the math. The green dot marks a live price; prices older than 1 hour are dimmed.')}</p>
     <div class="tablewrap"><table class="ct"><thead><tr><th scope="col">Item</th>${CITIES.map(c => `<th scope="col">${esc(c)}</th>`).join('')}</tr></thead>
     <tbody>${rec.ing.map(g => row(g.id, cityFor(g.id, 'buy', st))).join('')}
       <tr class="sep"><td colspan="${CITIES.length + 1}">${T('Você vende', 'You sell')}</td></tr>
-      ${row(rec.product, st.sellCity)}</tbody></table></div>`, '', true);
+      ${row(rec.product, st.sellCity, true)}</tbody></table></div>`, '', true);
+}
+// Vendas por dia: o histórico diário do AODP (item_count por cidade). Fica em
+// memória por 30 min; portais contam como a cidade, como no resto do app.
+const AODP_HOST = { west: 'https://west.albion-online-data.com', europe: 'https://europe.albion-online-data.com', east: 'https://east.albion-online-data.com' };
+const HIST = {}, HIST_MS = 30 * 60e3;
+function histFor(id) {
+  const k = S.server + '|' + id, h = HIST[k];
+  if (h && (h.loading || Date.now() - h.t < HIST_MS)) return h.loading ? null : h;
+  HIST[k] = { loading: true };
+  fetch(`${AODP_HOST[S.server] || AODP_HOST.west}/api/v2/stats/history/${encodeURIComponent(id)}.json?time-scale=24&qualities=1`)
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(rows => {
+      const since = Date.now() - 7 * 86400e3, byCity = {};
+      for (const row of Array.isArray(rows) ? rows : []) {
+        const c = ck(String(row.location || '').replace(/\s*portal$/i, ''));
+        let sum = 0;
+        for (const d of row.data || []) {
+          const ts = String(d.timestamp || '');
+          if (Date.parse(/Z|[+-]\d\d:?\d\d$/.test(ts) ? ts : ts + 'Z') >= since) sum += Number(d.item_count) || 0;
+        }
+        byCity[c] = (byCity[c] || 0) + sum / 7;
+      }
+      HIST[k] = { t: Date.now(), byCity };
+    })
+    // Se a API falhar, mostra "—" e tenta de novo em 1 minuto.
+    .catch(() => { HIST[k] = { t: Date.now() - HIST_MS + 60e3, byCity: {} }; })
+    .finally(() => { if (S.tab !== 'cap' && curRec() && curRec().product === id) renderCities(); });
+  return null;
 }
 function renderLedger() {
   const rec = curRec(), st = cur(), el = $('#ledger');
@@ -1193,7 +1274,16 @@ function renderKpis(r) {
       stale ? T('Pesquise no mercado', 'Search the market') : T('Tudo atualizado', 'All up to date'), stale ? `${stale} ${stale === 1 ? T('preço', 'price') : T('preços', 'prices')}` : T('menos de 1 h', 'under 1 h'), stale ? 'warn' : 'pos'),
   ].join('');
 }
+// Abas da tabela: lucro por unidade (SPU), prata por ponto de foco (SPF) e,
+// no refino, transmutação do recurso bruto.
 function renderCompare() {
+  const isRef = calcTab() === 'ref';
+  const views = [['spu', T('Lucro por unidade (SPU)', 'Silver per unit (SPU)')], ['spf', T('Prata por foco (SPF)', 'Silver per focus (SPF)')]];
+  if (isRef) views.push(['tr', T('Transmutação', 'Transmutation')]);
+  const view = views.some(([v]) => v === S.cmpView) ? S.cmpView : 'spu';
+  const tabs = `<div class="seg" role="group" aria-label="${T('Visão da tabela', 'Table view')}">${views.map(([v, l]) =>
+    `<button type="button" data-cmp="${v}" aria-pressed="${v === view ? 'true' : 'false'}">${esc(l)}</button>`).join('')}</div>`;
+  if (view === 'tr') return renderTransmute(tabs);
   const st = cur(), cat = catOf(), unit = unitOf();
   let rows, cols, title, recFor, isSel, rowLabel;
   if (calcTab() === 'ref') {
@@ -1217,16 +1307,90 @@ function renderCompare() {
     if (!rec) return '<td></td>';
     total++;
     const r = compute(rec, st, cat), sel = isSel(rk, e) ? ' sel' : '';
-    if (!r.ok) return `<td><button type="button" class="cell miss${sel}" data-pick="${esc(rk + '|' + e)}" title="${T('Faltam preços', 'Missing prices')}">—<small>${T('sem preço', 'no price')}</small></button></td>`;
+    const pick = `data-pick="${esc(rk + '|' + e)}"`;
+    const miss = `<td><button type="button" class="cell miss${sel}" ${pick} title="${T('Faltam preços', 'Missing prices')}">—<small>${T('sem preço', 'no price')}</small></button></td>`;
+    if (view === 'spf') {
+      // O ganho do foco só depende dos materiais; o preço de venda não entra.
+      const ingOk = r.missing.every(id => id === rec.product);
+      if (!ingOk || !(r.focusPer > 0)) return miss;
+      filled++;
+      const spf = r.gain / r.focusPer;
+      return `<td><button type="button" class="cell ${spf > 0.0049 ? 'pos' : ''}${sel}" ${pick}><b>${NF2.format(spf)}</b><small>${NF0.format(r.focusPer)} ${T('de foco', 'focus')}</small></button></td>`;
+    }
+    if (!r.ok) return miss;
     filled++;
     const per = r.profit / rec.out, c = per > 0.0499 ? 'pos' : per < -0.0499 ? 'neg' : '';
     const allLive = r.live === rec.ing.length + 1;
-    return `<td><button type="button" class="cell ${c}${sel}" data-pick="${esc(rk + '|' + e)}"${allLive ? ` title="${T('Todos os preços ao vivo', 'All prices live')}"` : ''}><b>${signed(per)}${allLive ? '<i class="lv"></i>' : ''}</b><small>${r.margin != null ? T('margem ', 'margin ') + pct(r.margin) : ''}</small></button></td>`;
+    return `<td><button type="button" class="cell ${c}${sel}" ${pick}${allLive ? ` title="${T('Todos os preços ao vivo', 'All prices live')}"` : ''}><b>${signed(per)}${allLive ? '<i class="lv"></i>' : ''}</b><small>${r.margin != null ? T('margem ', 'margin ') + pct(r.margin) : ''}</small></button></td>`;
   }).join('')}</tr>`).join('');
-  $('#compare').innerHTML = panelHtml(esc(title), `<p class="tbl-note">${EN
-    ? `Profit per ${unit} with the same location, focus, fees and cities. Click a cell to open its math. The green dot marks results made only with live prices.${filled < total ? ' Use Fetch from API to fill the rest of the table.' : ''}`
-    : `Lucro por ${unit} com o mesmo local, foco, taxas e cidades. Clique numa célula para abrir a conta. O ponto verde marca contas feitas só com preços ao vivo.${filled < total ? ' Use Buscar na API para preencher o resto da tabela.' : ''}`}</p>
-    <div class="tablewrap"><table class="cmp"><thead><tr><th scope="col">${calcTab() === 'ref' ? 'Tier' : T('Poção', 'Potion')}</th>${cols.map(e => `<th scope="col"><i class="dot e${e}"></i>.${e} ${ENCH[e]}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`, '', true);
+  const fill = filled < total ? T(' Use Buscar na API para preencher o resto da tabela.', ' Use Fetch from API to fill the rest of the table.') : '';
+  const note = view === 'spf'
+    ? (EN ? `Silver per focus point: how much more profit focus brings (the extra resource return, at the buy price) divided by the focus each ${isRef ? 'refine' : 'craft'} spends with your levels. Same location, fees and cities. Click a cell to open its math.${fill}`
+      : `Prata por ponto de foco: quanto o foco aumenta o lucro (o retorno extra de recursos, a preço de compra) dividido pelo foco que cada ${isRef ? 'refino' : 'craft'} gasta com os seus níveis. Mesmo local, taxas e cidades. Clique numa célula para abrir a conta.${fill}`)
+    : (EN ? `Profit per ${unit} with the same location, focus, fees and cities. Click a cell to open its math. The green dot marks results made only with live prices.${fill}`
+      : `Lucro por ${unit} com o mesmo local, foco, taxas e cidades. Clique numa célula para abrir a conta. O ponto verde marca contas feitas só com preços ao vivo.${fill}`);
+  $('#compare').innerHTML = panelHtml(esc(title), `<p class="tbl-note">${note}</p>
+    <div class="tablewrap"><table class="cmp"><thead><tr><th scope="col">${isRef ? 'Tier' : T('Poção', 'Potion')}</th>${cols.map(e => `<th scope="col"><i class="dot e${e}"></i>.${e} ${ENCH[e]}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`, tabs, true);
+}
+// Transmutação: para cada recurso bruto, o caminho mais barato até ele (comprar
+// um bruto e transmutar um ou mais passos) contra o preço de venda dele.
+// Cada passo custa a prata da receita mais a taxa da estação; não há retorno nem foco.
+function transmuteBest(st) {
+  const fam = S.ref.fam, TR = DATA.F[fam].t || {};
+  const setupBuy = st.buyMode === 'order' ? 0.025 : 0;
+  const memo = {};
+  function buy(key) {
+    const p = priceOf(rawId(fam, key), 'buy', st);
+    return p && p.v != null ? { cost: p.v * (1 + setupBuy), path: [key] } : null;
+  }
+  function viaTransmute(key) {
+    const t = TR[key]; if (!t) return null;
+    const fee = t[0] * NUTRITION * (Number(st.fee) || 0) / 100;
+    let best = null;
+    for (const [from, silver] of t[1]) {
+      const a = acquire(rawKey(from)); if (!a) continue;
+      const cost = a.cost + silver + fee;
+      if (!best || cost < best.cost) best = { cost, path: a.path.concat(key) };
+    }
+    return best;
+  }
+  function acquire(key) {
+    if (!(key in memo)) {
+      const b = buy(key), t = viaTransmute(key);
+      memo[key] = b && t ? (t.cost < b.cost ? t : b) : (b || t);
+    }
+    return memo[key];
+  }
+  return viaTransmute;
+}
+function renderTransmute(tabs) {
+  const st = S.ref, fam = st.fam, TR = DATA.F[fam].t || {};
+  const taxRate = S.premium ? 0.04 : 0.08, setupSell = st.sellMode === 'order' ? 0.025 : 0;
+  const best = transmuteBest(st);
+  const tiers = [...new Set(Object.keys(TR).map(k => +k.split('.')[0]))].sort((a, b) => a - b);
+  const cols = [0, 1, 2, 3, 4].filter(e => tiers.some(t => TR[t + '.' + e]));
+  const lab = k => 'T' + k;
+  let filled = 0, total = 0;
+  const body = tiers.map(t => `<tr><th scope="row"><span class="ih">${ico(rawId(fam, t + '.0'), 30)}<span>T${t}<small>${TIER_NAME[t]}</small></span></span></th>${cols.map(e => {
+    const key = t + '.' + e;
+    if (!TR[key]) return '<td></td>';
+    total++;
+    const id = rawId(fam, key), b = best(key), ps = priceOf(id, 'sell', st);
+    if (!b || !ps || ps.v == null) return `<td><span class="cell miss" title="${T('Faltam preços', 'Missing prices')}">—<small>${T('sem preço', 'no price')}</small></span></td>`;
+    filled++;
+    const net = ps.v * (1 - taxRate - setupSell), profit = net - b.cost;
+    const c = profit > 0.0499 ? 'pos' : profit < -0.0499 ? 'neg' : '';
+    const tip = EN
+      ? `Buy ${nm(rawId(fam, b.path[0]))} in ${st.buyCity} and transmute ${b.path.map(lab).join(' → ')}: ${money(b.cost)} per unit. Sell in ${st.sellCity}: ${money(net)} net.`
+      : `Comprar ${nm(rawId(fam, b.path[0]))} em ${st.buyCity} e transmutar ${b.path.map(lab).join(' → ')}: ${money(b.cost)} por unidade. Vender em ${st.sellCity}: ${money(net)} líquido.`;
+    return `<td><span class="cell ${c}" title="${esc(tip)}"><b>${signed(profit)}</b><small>${b.path.map(lab).join('→')} · ${T('custo', 'cost')} ${money(b.cost)}</small></span></td>`;
+  }).join('')}</tr>`).join('');
+  const fill = filled < total ? T(' Use Buscar na API para preencher o resto da tabela.', ' Use Fetch from API to fill the rest of the table.') : '';
+  const note = EN
+    ? `Profit per unit of ${FAM[fam].label.toLowerCase()} made by transmutation: the cheapest way is buying a lower resource in ${esc(st.buyCity)} and transmuting it up, step by step, then selling in ${esc(st.sellCity)}. Each step pays the transmutation silver from the game files and the station fee; there is no resource return and no focus. Hover a cell to see the path.${fill}`
+    : `Lucro por unidade de ${FAM[fam].label.toLowerCase()} feita por transmutação: o caminho mais barato compra um recurso menor em ${esc(st.buyCity)} e transmuta passo a passo até o alvo, para vender em ${esc(st.sellCity)}. Cada passo paga a prata da transmutação (dos arquivos do jogo) e a taxa da estação; não há retorno de recursos nem foco. Passe o mouse na célula para ver o caminho.${fill}`;
+  $('#compare').innerHTML = panelHtml(esc(`${T('Transmutação de', 'Transmutation of')} ${FAM[fam].label}`), `<p class="tbl-note">${note}</p>
+    <div class="tablewrap"><table class="cmp"><thead><tr><th scope="col">Tier</th>${cols.map(e => `<th scope="col"><i class="dot e${e}"></i>.${e} ${ENCH[e]}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`, tabs, true);
 }
 function renderDock(r) {
   const el = $('#dock'), rec = curRec(), st = cur();
@@ -1360,7 +1524,9 @@ function renderCapture() {
 function fetchIds() {
   const set = new Set();
   if (calcTab() === 'ref') {
-    for (const r of Object.values(DATA.F[S.ref.fam].r)) { set.add(r[0]); r[3].forEach(([id]) => set.add(id)); }
+    const F = DATA.F[S.ref.fam];
+    for (const r of Object.values(F.r)) { set.add(r[0]); r[3].forEach(([id]) => set.add(id)); (r[4] || []).forEach(([id]) => set.add(id)); }
+    for (const [k, [, ways]] of Object.entries(F.t || {})) { set.add(rawId(S.ref.fam, k)); ways.forEach(([id]) => set.add(id)); }
   } else {
     for (const pid of POT_BY_TYPE[POTS[S.pot.id].type]) for (const l of Object.values(POTS[pid].lv)) { set.add(l[0]); l[4].forEach(([id]) => set.add(id)); }
   }
@@ -1431,22 +1597,43 @@ async function copyText(text) {
   catch (e) { toast(T('Não consegui copiar. Selecione o texto e use Ctrl+C.', 'Could not copy. Select the text and press Ctrl+C.')); }
 }
 
+// A janela de níveis mostra o refino ou a alquimia, conforme a aba aberta.
+let specsMode = 'ref';
 function specsPreview() {
   const el = $('#specs-preview'); if (!el) return;
-  const fam = S.ref.fam, rec = refRec(fam, S.ref.tier, S.ref.ench);
+  const isPot = specsMode === 'pot';
+  const rec = isPot ? potRec(S.pot.id, S.pot.ench) : refRec(S.ref.fam, S.ref.tier, S.ref.ench);
   if (!rec) { el.textContent = ''; return; }
-  const fce = fceFor(fam, tierOf(rec.product)), f = autoFocus(rec);
+  const fce = isPot ? potFce(potTypeOf(rec.product)) : fceFor(S.ref.fam, tierOf(rec.product));
+  const f = Math.round(focusFromFce(rec.focus, fce));
+  const one = isPot ? 'craft' : T('refino', 'refine'), many = isPot ? 'crafts' : T('refinos', 'refines');
   el.innerHTML = EN
-    ? `Current recipe, <b>${esc(nm(rec.product))} ${tierTag(rec.product)}</b>: efficiency ${NF0.format(fce)} → <b>${NF0.format(f)} focus</b> per refine (base ${NF0.format(rec.focus)}, ${pct(f / rec.focus)} of the cost). 10,000 focus covers ${NF0.format(Math.floor(FOCUS_PER_DAY / Math.max(1, f)))} refines.`
-    : `Receita atual, <b>${esc(nm(rec.product))} ${tierTag(rec.product)}</b>: eficiência ${NF0.format(fce)} → <b>${NF0.format(f)} de foco</b> por refino (base ${NF0.format(rec.focus)}, ${pct(f / rec.focus)} do custo). Com 10.000 de foco dá para ${NF0.format(Math.floor(FOCUS_PER_DAY / Math.max(1, f)))} refinos.`;
+    ? `Current recipe, <b>${esc(nm(rec.product))} ${tierTag(rec.product)}</b>: efficiency ${NF0.format(fce)} → <b>${NF0.format(f)} focus</b> per ${one} (base ${NF0.format(rec.focus)}, ${pct(f / rec.focus)} of the cost). 10,000 focus covers ${NF0.format(Math.floor(FOCUS_PER_DAY / Math.max(1, f)))} ${many}.`
+    : `Receita atual, <b>${esc(nm(rec.product))} ${tierTag(rec.product)}</b>: eficiência ${NF0.format(fce)} → <b>${NF0.format(f)} de foco</b> por ${one} (base ${NF0.format(rec.focus)}, ${pct(f / rec.focus)} do custo). Com 10.000 de foco dá para ${NF0.format(Math.floor(FOCUS_PER_DAY / Math.max(1, f)))} ${many}.`;
 }
-function openSpecs() {
-  const body = $('#specs-body');
-  body.innerHTML = Object.keys(FAM).map(fam => {
+const lvlInput = (attr, v, label) => `<input type="number" min="0" max="100" step="1" inputmode="numeric" ${attr} value="${clampLvl(v)}" aria-label="${esc(label)}">`;
+function refSpecsHtml() {
+  return `<div class="tablewrap"><table class="specs-tbl"><thead><tr><th scope="col">${T('Recurso', 'Resource')}</th>${SPEC_KEYS.map(k => `<th scope="col">${k.toUpperCase()}</th>`).join('')}</tr></thead><tbody>${Object.keys(FAM).map(fam => {
     const sp = S.specs[fam];
     return `<tr><td><span class="ih">${ico(DATA.F[fam].r['4.0'][0], 26)}${esc(FAM[fam].label)} → ${esc(FAM[fam].out)}</span></td>${SPEC_KEYS.map(k =>
-      `<td><input type="number" min="0" max="100" step="1" inputmode="numeric" id="spec-${fam}-${k}" data-spec="${fam}|${k}" value="${clampLvl(sp[k])}" aria-label="${esc(FAM[fam].label)} ${k.toUpperCase()}"></td>`).join('')}</tr>`;
-  }).join('');
+      `<td>${lvlInput(`id="spec-${fam}-${k}" data-spec="${fam}|${k}"`, sp[k], FAM[fam].label + ' ' + k.toUpperCase())}</td>`).join('')}</tr>`;
+  }).join('')}</tbody></table></div>`;
+}
+function potSpecsHtml() {
+  const field = (key, label, icon) => `<label${key === 'm' ? ' class="m"' : ''}><span class="ih">${icon ? ico(icon, 26) : ''}${esc(label)}</span>${lvlInput(`id="pspec-${key}" data-pspec="${key}"`, S.potSpecs[key], label)}</label>`;
+  return `<div class="specs-grid">${field('m', T('Alquimista (maestria)', 'Alchemist (mastery)'))}${POT_TYPES.map(([t, label]) =>
+    field(t, label, POT_BY_TYPE[t] ? POT_BY_TYPE[t][0] : '')).join('')}${field('ALCOHOL', T('Álcool', 'Alcohol'), 'T6_ALCOHOL')}</div>`;
+}
+function openSpecs() {
+  specsMode = calcTab();
+  const isPot = specsMode === 'pot';
+  $('#specs-title').textContent = isPot ? T('Níveis de alquimia', 'Alchemy levels') : T('Níveis de refino', 'Refining levels');
+  $('#specs-intro').textContent = isPot
+    ? T('No Destiny Board, a linha Alquimista tem a maestria e uma especialização para cada poção, mais a do álcool. Copie o nível de cada uma (0 a 100). A maestria e cada especialização dão +30 de eficiência em toda poção, e a especialização da própria poção dá mais +250.',
+      'In the Destiny Board, the Alchemist line has the mastery and one specialization for each potion, plus one for alcohol. Copy the level of each (0 to 100). The mastery and every specialization give +30 efficiency to all potions, and the potion\'s own specialization gives another +250.')
+    : T('No Destiny Board, cada linha de refino tem 5 nós: do primeiro abaixo do topo até o último são T4, T5, T6, T7 e T8. Copie o nível de cada um (0 a 100). O app calcula sozinho o foco de cada refino.',
+      'In the Destiny Board, each refining line has 5 nodes: from the first one below the top to the last they are T4, T5, T6, T7 and T8. Copy the level of each (0 to 100). The app works out the focus of every refine by itself.');
+  $('#specs-wrap').innerHTML = isPot ? potSpecsHtml() : refSpecsHtml();
   specsPreview();
   const d = $('#specs');
   if (d.showModal) d.showModal(); else d.setAttribute('open', '');
@@ -1484,6 +1671,10 @@ function onChip(group, v) {
 function onSeg(btn, key, v) {
   for (const b of btn.parentElement.querySelectorAll('button')) b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
   if (key === 'premium') { S.premium = v === '1'; update(); save(); return; }
+  if (key === 'heart') {
+    S.ref.heart = v === 'true';
+    renderForm(); update(); save(); refocus(`[data-seg="heart"][data-v="${v}"]`); autoFetchIfNeeded(); return;
+  }
   const st = cur();
   if (key === 'focus') st.focus = v === 'true';
   else if (key === 'daily') st.daily = Number(v);
@@ -1522,6 +1713,7 @@ document.addEventListener('click', e => {
   if (b.dataset.chip) return onChip(b.dataset.chip, b.dataset.v);
   if (b.dataset.seg) return onSeg(b, b.dataset.seg, b.dataset.v);
   if (b.dataset.pick) return onPick(b.dataset.pick);
+  if (b.dataset.cmp) { S.cmpView = b.dataset.cmp; renderCompare(); save(); refocus(`[data-cmp="${b.dataset.cmp}"]`); return; }
   if (b.dataset.copy) return copyText(b.dataset.copy);
   if (b.dataset.copyEl) { const el = document.getElementById(b.dataset.copyEl); if (el) copyText(el.textContent); return; }
   if (b.dataset.here) {
@@ -1536,6 +1728,16 @@ document.addEventListener('click', e => {
     return;
   }
   if (b.dataset.clear) { const k = b.dataset.clear; delete MAN[k]; updateRow(k, true); update(); save(); return; }
+  if (b.id === 'btn-check-upd') {
+    b.disabled = true; b.setAttribute('aria-busy', 'true');
+    api('POST', '/api/update/check').then(res => {
+      if (res.update) { UPD = res.update; renderUpdate(); }
+      if (!res.ok) toast(T('Não consegui verificar: ', 'Could not check: ') + res.err, 4000);
+      else if (UPD.state !== 'available') toast(T('Você já está na versão mais nova.', 'You are already on the newest version.'));
+    }).catch(() => toast(T('Não consegui falar com o app.', 'Could not reach the app.')))
+      .finally(() => { b.disabled = false; b.removeAttribute('aria-busy'); });
+    return;
+  }
   if (b.id === 'btn-update') {
     UPD = Object.assign({}, UPD, { state: 'installing' }); renderUpdate();
     api('POST', '/api/update').catch(() => toast(T('Não consegui falar com o app.', 'Could not reach the app.')));
@@ -1578,6 +1780,10 @@ document.addEventListener('input', e => {
   if (t.dataset.spec) {
     const [fam, k] = t.dataset.spec.split('|');
     S.specs[fam][k] = clampLvl(t.value);
+    specsPreview(); save(); return;
+  }
+  if (t.dataset.pspec) {
+    S.potSpecs[t.dataset.pspec] = clampLvl(t.value);
     specsPreview(); save(); return;
   }
   if (t.dataset.price) {

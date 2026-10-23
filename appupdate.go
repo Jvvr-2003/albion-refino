@@ -50,27 +50,37 @@ func (a *App) checkUpdates(stop <-chan struct{}) {
 		case <-time.After(wait):
 		}
 		wait = every
-		a.upd.mu.Lock()
-		busy := a.upd.st.State == "installing" || a.upd.st.State == "restarting"
-		a.upd.mu.Unlock()
-		if busy {
-			continue
-		}
-		rel, err := latestRelease()
-		if err != nil {
+		if err := a.checkNow(); err != nil {
 			a.logf("verificar atualização: %v", err)
-			continue
 		}
-		a.upd.mu.Lock()
-		a.upd.rel = rel
-		a.upd.mu.Unlock()
-		a.setUpdate(func(s *UpdateStatus) {
-			s.CheckedAt = time.Now().UnixMilli()
-			if rel != nil {
-				s.Latest, s.State, s.Error = rel.Version, "available", ""
-			}
-		})
 	}
+}
+
+// checkNow consulta a última Release uma vez. Usado pelo laço de 30 minutos e
+// pelo botão "Verificar atualização" da tela.
+func (a *App) checkNow() error {
+	a.upd.mu.Lock()
+	busy := a.upd.st.State == "installing" || a.upd.st.State == "restarting"
+	a.upd.mu.Unlock()
+	if busy {
+		return nil
+	}
+	rel, err := latestRelease()
+	if err != nil {
+		return err
+	}
+	a.upd.mu.Lock()
+	a.upd.rel = rel
+	a.upd.mu.Unlock()
+	a.setUpdate(func(s *UpdateStatus) {
+		s.CheckedAt = time.Now().UnixMilli()
+		if rel != nil {
+			s.Latest, s.State, s.Error = rel.Version, "available", ""
+		} else if s.State == "available" || s.State == "error" {
+			s.Latest, s.State, s.Error = "", "", ""
+		}
+	})
+	return nil
 }
 
 // applyUpdate baixa e instala a versão nova e reinicia o app nela. A janela
