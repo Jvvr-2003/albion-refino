@@ -752,7 +752,8 @@ const rawKey = id => tierOf(id) + '.' + enchOf(id);
 function potRec(id, e) {
   const p = POTS[id], l = p && p.lv[String(e)];
   if (!l) return null;
-  return { product: l[0], out: l[1], focus: l[2], iv: l[3], ing: l[4].map(([iid, q, ret]) => ({ id: iid, q, ret })) };
+  // O foco do arquivo do jogo (craftingfocus) é por poção: um craft de 5 custa 5×.
+  return { product: l[0], out: l[1], focus: l[2] * l[1], iv: l[3], ing: l[4].map(([iid, q, ret]) => ({ id: iid, q, ret })) };
 }
 const curRec = () => (calcTab() === 'ref' ? refRec(S.ref.fam, S.ref.tier, S.ref.ench) : potRec(S.pot.id, S.pot.ench));
 const typeLabel = type => (POT_TYPES.find(t => t[0] === type) || [type, type])[1];
@@ -806,14 +807,22 @@ function fceFor(fam, tier) {
   return fce;
 }
 const focusFromFce = (base, fce) => base * Math.pow(0.5, fce / 10000);
-// Alquimia: cada nível do Alquimista (maestria) dá +30 em toda poção. Cada
-// especialização dá +250 na própria poção e +30 em toda poção, como no craft de equipamento.
+// Alquimia (texto do Destiny Board): o Alquimista (maestria) dá +30 por nível em
+// toda poção. Cada nível de uma especialização dá +250 na própria poção e um bônus
+// em toda poção: +22,5 nas poções clássicas e no álcool, +11,5 nas poções com
+// parte rara. Pegajosa, Venenosa, Invisibilidade e Calmante ainda não foram
+// conferidas no jogo (seguem o grupo pela receita).
+// Conferido: Alquimista 100, Resistência 100, 244/1600 → T7 de Resistência 651 por craft.
+const POT_FCE_OWN = 250, POT_FCE_MASTERY = 30;
+const POT_FCE_ALL = { HEAL: 22.5, ENERGY: 22.5, REVIVE: 22.5, STONESKIN: 22.5, ALCOHOL: 22.5, SLOWFIELD: 22.5, COOLDOWN: 22.5, CLEANSE: 22.5,
+  MOB_RESET: 11.5, CLEANSE2: 11.5, ACID: 11.5, BERSERK: 11.5, LAVA: 11.5, GATHER: 11.5, TORNADO: 11.5, LIFEWARD: 11.5 };
 const potTypeOf = id => (POTS[String(id).split('@')[0]] || {}).type;
+const potSpecTotal = () => POT_SPEC_KEYS.reduce((s, k) => s + clampLvl((S.potSpecs || {})[k]), 0);
 function potFce(type) {
   const sp = S.potSpecs || {};
-  let fce = 30 * clampLvl(sp.m);
-  for (const k of POT_SPEC_KEYS) fce += 30 * clampLvl(sp[k]);
-  if (type) fce += 250 * clampLvl(sp[type]);
+  let fce = POT_FCE_MASTERY * clampLvl(sp.m);
+  for (const k of POT_SPEC_KEYS) fce += (POT_FCE_ALL[k] || 0) * clampLvl(sp[k]);
+  if (type) fce += POT_FCE_OWN * clampLvl(sp[type]);
   return fce;
 }
 function autoFocus(rec) {
@@ -1618,9 +1627,11 @@ function specsPreview() {
   const fce = isPot ? potFce(potTypeOf(rec.product)) : fceFor(S.ref.fam, tierOf(rec.product));
   const f = Math.round(focusFromFce(rec.focus, fce));
   const one = isPot ? 'craft' : T('refino', 'refine'), many = isPot ? 'crafts' : T('refinos', 'refines');
-  el.innerHTML = EN
+  const total = isPot ? (EN ? `Levels in total: <b>${NF0.format(potSpecTotal())}/1,600</b> (the number in the middle of the Alchemist line). `
+    : `Níveis no total: <b>${NF0.format(potSpecTotal())}/1.600</b> (o número no meio da linha Alquimista). `) : '';
+  el.innerHTML = total + (EN
     ? `Current recipe, <b>${esc(nm(rec.product))} ${tierTag(rec.product)}</b>: efficiency ${NF0.format(fce)} → <b>${NF0.format(f)} focus</b> per ${one} (base ${NF0.format(rec.focus)}, ${pct(f / rec.focus)} of the cost). 10,000 focus covers ${NF0.format(Math.floor(FOCUS_PER_DAY / Math.max(1, f)))} ${many}.`
-    : `Receita atual, <b>${esc(nm(rec.product))} ${tierTag(rec.product)}</b>: eficiência ${NF0.format(fce)} → <b>${NF0.format(f)} de foco</b> por ${one} (base ${NF0.format(rec.focus)}, ${pct(f / rec.focus)} do custo). Com 10.000 de foco dá para ${NF0.format(Math.floor(FOCUS_PER_DAY / Math.max(1, f)))} ${many}.`;
+    : `Receita atual, <b>${esc(nm(rec.product))} ${tierTag(rec.product)}</b>: eficiência ${NF0.format(fce)} → <b>${NF0.format(f)} de foco</b> por ${one} (base ${NF0.format(rec.focus)}, ${pct(f / rec.focus)} do custo). Com 10.000 de foco dá para ${NF0.format(Math.floor(FOCUS_PER_DAY / Math.max(1, f)))} ${many}.`);
 }
 const lvlInput = (attr, v, label) => `<input type="number" min="0" max="100" step="1" inputmode="numeric" ${attr} value="${clampLvl(v)}" aria-label="${esc(label)}">`;
 function refSpecsHtml() {
@@ -1632,7 +1643,7 @@ function refSpecsHtml() {
 }
 function potSpecsHtml() {
   const field = (key, label, icon) => `<label${key === 'm' ? ' class="m"' : ''}><span class="ih">${icon ? ico(icon, 26) : ''}${esc(label)}</span>${lvlInput(`id="pspec-${key}" data-pspec="${key}"`, S.potSpecs[key], label)}</label>`;
-  return `<div class="specs-grid">${field('m', T('Alquimista (maestria)', 'Alchemist (mastery)'))}${POT_TYPES.map(([t, label]) =>
+  return `<div class="specs-grid">${field('m', T('Alquimista (maestria, o nó de cima)', 'Alchemist (mastery, the top node)'), 'T4_POTION_HEAL')}${POT_TYPES.map(([t, label]) =>
     field(t, label, POT_BY_TYPE[t] ? POT_BY_TYPE[t][0] : '')).join('')}${field('ALCOHOL', T('Álcool', 'Alcohol'), 'T6_ALCOHOL')}</div>`;
 }
 function openSpecs() {
@@ -1640,8 +1651,8 @@ function openSpecs() {
   const isPot = specsMode === 'pot';
   $('#specs-title').textContent = isPot ? T('Níveis de alquimia', 'Alchemy levels') : T('Níveis de refino', 'Refining levels');
   $('#specs-intro').textContent = isPot
-    ? T('No Destiny Board, a linha Alquimista tem a maestria e uma especialização para cada poção, mais a do álcool. Copie o nível de cada uma (0 a 100). A maestria e cada especialização dão +30 de eficiência em toda poção, e a especialização da própria poção dá mais +250.',
-      'In the Destiny Board, the Alchemist line has the mastery and one specialization for each potion, plus one for alcohol. Copy the level of each (0 to 100). The mastery and every specialization give +30 efficiency to all potions, and the potion\'s own specialization gives another +250.')
+    ? T('No Destiny Board, a linha Alquimista tem a maestria (o nó Alquimista) e uma especialização para cada poção, mais a do álcool. Copie o nível de cada uma (0 a 100). A maestria dá +30 de eficiência por nível em toda poção. Cada especialização dá +250 na própria poção e um bônus em toda poção: +22,5 nas poções clássicas e no álcool, +11,5 nas poções com parte rara.',
+      'In the Destiny Board, the Alchemist line has the mastery (the Alchemist node) and one specialization for each potion, plus one for alcohol. Copy the level of each (0 to 100). The mastery gives +30 efficiency per level to all potions. Each specialization gives +250 to its own potion and a bonus to all potions: +22.5 for the classic potions and alcohol, +11.5 for the potions with a rare part.')
     : T('No Destiny Board, cada linha de refino tem 5 nós: do primeiro abaixo do topo até o último são T4, T5, T6, T7 e T8. Copie o nível de cada um (0 a 100). O app calcula sozinho o foco de cada refino.',
       'In the Destiny Board, each refining line has 5 nodes: from the first one below the top to the last they are T4, T5, T6, T7 and T8. Copy the level of each (0 to 100). The app works out the focus of every refine by itself.');
   $('#specs-wrap').innerHTML = isPot ? potSpecsHtml() : refSpecsHtml();

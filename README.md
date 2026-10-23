@@ -25,9 +25,16 @@ não há Data Client rodando, o app abre um com `-p` e fecha ao sair.
   foco de cada receita sai dos níveis do Destiny Board.
   - Refino: 250 de eficiência por nível do nó do próprio tier + 30 por nível de
     cada nó T4 a T8 do mesmo recurso.
-  - Alquimia: 30 por nível do Alquimista (maestria) + 30 por nível de cada
-    especialização (15 poções e o álcool) + 250 por nível da especialização da
-    própria poção.
+  - Alquimia: 30 por nível do Alquimista (maestria) + 250 por nível da
+    especialização da própria poção + um bônus em
+    toda poção por nível de cada especialização: 22,5 nas clássicas (Cura,
+    Energia, Crescimento, Resistência) e no álcool, 11,5 nas com parte rara
+    (Purificadora, Ácida, Fúria, Infernal, Coleta, Tornado, Salva-vidas), como
+    diz o Destiny Board. Pegajosa, Venenosa e Invisibilidade (22,5) e Calmante
+    (11,5) seguem o grupo pela receita, sem conferência no jogo. O foco base do
+    jogo é por poção, então um craft de 5 custa 5×. Conferido no jogo:
+    Alquimista 100, Resistência 100 e 244/1600 dão 651 de foco no craft de 5
+    Resistências T7.
   - Foco = base × 0,5^(eficiência ÷ 10.000).
 - **Tabela de lucro com abas**:
   - **SPU**: lucro por unidade.
